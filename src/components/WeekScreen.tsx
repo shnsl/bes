@@ -31,9 +31,8 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onToggl
   const canNext = canGoToNextWeek(weekStart, today);
 
   return (
-    <main className="stage">
-      <ThemeToggle />
-      <header className={onSignOut ? "header with-exit" : "header"}>
+    <main className="stage home">
+      <header className="topbar">
         <button type="button" className="nav" aria-label="Önceki hafta" onClick={() => onShift(-1)}>
           <Chevron direction="left" />
         </button>
@@ -53,6 +52,7 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onToggl
         >
           <Chevron direction="right" />
         </button>
+        <ThemeToggle />
         {onSignOut ? (
           <button type="button" className="nav exit" aria-label="Çıkış" onClick={onSignOut}>
             <ExitIcon />
