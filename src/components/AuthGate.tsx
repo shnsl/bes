@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, type User } from "firebase/auth";
 import { PIN_ACCOUNT_EMAIL, getFirebase } from "../firebase";
 import { ThemeToggle } from "./ThemeToggle";
@@ -23,6 +23,7 @@ function PinScreen() {
   const [pin, setPin] = useState("");
   const [bad, setBad] = useState(false);
   const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function submit(nextPin = pin) {
     const firebase = getFirebase();
@@ -35,6 +36,7 @@ function PinScreen() {
       setPin("");
       setBad(true);
       setBusy(false);
+      inputRef.current?.focus();
     }
   }
 
@@ -44,10 +46,16 @@ function PinScreen() {
   }
 
   return (
-    <main className="stage center">
+    <main className="stage center gate">
       <ThemeToggle />
-      <form className={bad ? "pin-form bad" : "pin-form"} onSubmit={onSubmit}>
+      <form className={bad ? "pin-form bad" : "pin-form"} onSubmit={onSubmit} onClick={() => inputRef.current?.focus()}>
+        <div className="pin-slots" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, index) => (
+            <span key={index} className={index < pin.length ? "pin-slot filled" : "pin-slot"} />
+          ))}
+        </div>
         <input
+          ref={inputRef}
           className="pin"
           inputMode="numeric"
           autoComplete="current-password"

@@ -13,7 +13,7 @@ function readTheme(): Theme {
 function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#161311" : "#f4efe6");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#101835" : "#eef2f8");
   localStorage.setItem(STORAGE_KEY, theme);
 }
 

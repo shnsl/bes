@@ -1,33 +1,39 @@
 :root,
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #f4efe6;
-  --ink: #3a332b;
-  --muted: #8d8376;
-  --line: #ddd4c6;
-  --today: #ebe4d6;
-  --on-prayer: #fffaf3;
-  --sabah: #e09a2b;
-  --ogle: #d4a017;
-  --ikindi: #d06a32;
-  --aksam: #c4546a;
-  --yatsi: #4c629e;
+  --bg: #eef2f8;
+  --bg-gate: radial-gradient(circle at 50% 42%, #d7e0f0 0%, #eef2f8 62%, #e4eaf4 100%);
+  --ink: #18233f;
+  --muted: #6b7690;
+  --line: #c5cee0;
+  --today: #dde4f1;
+  --on-prayer: #f7f9fc;
+  --accent: #c9a227;
+  --accent-soft: #e8d48a;
+  --sabah: #c98a1e;
+  --ogle: #c9a227;
+  --ikindi: #c46a2e;
+  --aksam: #b84f66;
+  --yatsi: #3f5aa8;
   font-family: "Segoe UI", system-ui, sans-serif;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #161311;
-  --ink: #f4ece3;
-  --muted: #b3a598;
-  --line: #3d362f;
-  --today: #2a241f;
-  --on-prayer: #1a140f;
-  --sabah: #f0b14a;
-  --ogle: #f2c94c;
-  --ikindi: #ef8a4c;
-  --aksam: #ee7d92;
-  --yatsi: #9eb0ee;
+  --bg: #101835;
+  --bg-gate: radial-gradient(circle at 50% 40%, #1b2a52 0%, #101835 58%, #0b1228 100%);
+  --ink: #eef2fb;
+  --muted: #9aa6c2;
+  --line: #334264;
+  --today: #1a2648;
+  --on-prayer: #101835;
+  --accent: #d4af37;
+  --accent-soft: #8a7428;
+  --sabah: #e0a63a;
+  --ogle: #d4af37;
+  --ikindi: #e08a4a;
+  --aksam: #e07a90;
+  --yatsi: #8ea0e6;
 }
 
 * { box-sizing: border-box; }
@@ -53,10 +59,16 @@ button {
   padding: calc(52px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom));
 }
 
+.stage.gate {
+  max-width: none;
+  background: var(--bg-gate);
+}
+
 .theme {
   position: absolute;
   top: calc(6px + env(safe-area-inset-top));
   right: 8px;
+  z-index: 2;
 }
 
 .center { display: grid; place-items: center; }
@@ -99,9 +111,6 @@ button {
   background: transparent;
   cursor: pointer;
   border-radius: 999px;
-}
-
-.nav {
   width: 3rem;
   height: 3rem;
   color: var(--ink);
@@ -114,26 +123,67 @@ button {
   cursor: default;
 }
 
-.nav:focus-visible, .prayer:focus-visible, .pin:focus-visible {
-  outline: 2px solid var(--ogle);
-  outline-offset: 2px;
+.nav:focus-visible, .prayer:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
-.pin-form { display: grid; place-items: center; }
+.pin-form {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(20rem, 88vw);
+  padding: 0.4rem;
+  cursor: text;
+}
+
+.pin-slots {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+  width: 100%;
+}
+
+.pin-slot {
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 2.5px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.pin-slot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.06);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.pin-form.bad .pin-slot {
+  border-color: var(--aksam);
+  animation: pin-shake 280ms ease;
+}
+
+.pin-form.bad .pin-slot.filled {
+  background: var(--aksam);
+  border-color: var(--aksam);
+}
 
 .pin {
-  width: 11rem;
-  padding: 0.4rem 0;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
   border: 0;
-  border-bottom: 2px solid var(--line);
+  caret-color: transparent;
+  color: transparent;
   background: transparent;
-  color: var(--ink);
-  font-size: 2rem;
-  letter-spacing: 0.45rem;
-  text-align: center;
 }
 
-.pin-form.bad .pin { border-bottom-color: var(--aksam); }
+@keyframes pin-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
 
 .days {
   display: flex;
@@ -207,6 +257,8 @@ button {
     padding: 64px 48px 48px;
   }
 
+  .stage.gate { max-width: none; }
+
   .theme { right: 16px; top: 12px; }
 
   .summary-done { font-size: 3rem; }
@@ -218,4 +270,6 @@ button {
   .prayer { width: min(100%, 4.6rem); }
 
   .day-label { font-size: 0.95rem; }
+
+  .pin-form { width: 22rem; }
 }
