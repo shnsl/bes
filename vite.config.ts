@@ -15,8 +15,11 @@ export default defineConfig({
         lang: "tr",
         theme_color: "#101835",
         background_color: "#101835",
-        display: "standalone",
+        display: "fullscreen",
+        display_override: ["fullscreen", "standalone"],
+        orientation: "portrait",
         start_url: "/",
+        scope: "/",
         icons: [
           { src: "pwa-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
           { src: "pwa-512.png", sizes: "512x512", type: "image/png", purpose: "any" },

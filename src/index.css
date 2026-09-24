@@ -38,10 +38,17 @@
 
 * { box-sizing: border-box; }
 
+html, body, #root {
+  height: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
+  overscroll-behavior: none;
 }
 
 button {
@@ -54,14 +61,17 @@ button {
 .stage {
   position: relative;
   min-height: 100dvh;
+  min-height: 100svh;
   max-width: 720px;
   margin: 0 auto;
-  padding: calc(52px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom));
+  padding: calc(40px + env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
 .stage.gate {
   max-width: none;
   background: var(--bg-gate);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .theme {
@@ -133,14 +143,17 @@ button {
   display: grid;
   place-items: center;
   width: min(20rem, 88vw);
-  padding: 0.4rem;
+  padding: 1.15rem 1.35rem;
+  border-radius: 999px;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 18%, transparent);
   cursor: text;
 }
 
 .pin-slots {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 14px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -157,6 +170,10 @@ button {
   border-color: var(--accent);
   transform: scale(1.06);
   box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.pin-form.bad {
+  border-color: var(--aksam);
 }
 
 .pin-form.bad .pin-slot {
