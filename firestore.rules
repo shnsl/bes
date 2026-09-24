@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // users/{uid} — profil: email, practiceId, createdAt
+    // practices/{practiceId} — muayenehane; alt belgeler sahip
+    // users/{uid}/days/{YYYY-MM-DD} — namaz: sabah, ogle, ikindi, aksam, yatsi (hepsi bool)
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwnUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isPracticeDocOwner(practiceId) {
+      return isSignedIn() && request.auth.uid == practiceId;
+    }
+
+    function isPracticeOwner(practiceId) {
+      return isPracticeDocOwner(practiceId)
+        && exists(/databases/$(database)/documents/practices/$(practiceId))
+        && get(/databases/$(database)/documents/practices/$(practiceId)).data.ownerUid
+          == request.auth.uid;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidDayId(dayId) {
+      return dayId.matches('^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$');
+    }
+
+    function isValidDay(data) {
+      return hasOnlyAllowedFields(['sabah', 'ogle', 'ikindi', 'aksam', 'yatsi'])
+        && data.sabah is bool
+        && data.ogle is bool
+        && data.ikindi is bool
+        && data.aksam is bool
+        && data.yatsi is bool;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwnUser(uid);
+      allow create: if isOwnUser(uid)
+        && request.resource.data.keys().hasAll(['email', 'practiceId', 'createdAt'])
+        && request.resource.data.email is string
+        && request.resource.data.practiceId is string;
+      allow update: if isOwnUser(uid)
+        && request.resource.data.practiceId == resource.data.practiceId;
+      allow delete: if false;
+
+      match /days/{dayId} {
+        allow read: if isOwnUser(uid);
+        allow create: if isOwnUser(uid) && isValidDayId(dayId) && isValidDay(request.resource.data);
+        allow update: if isOwnUser(uid) && isValidDayId(dayId) && isValidDay(request.resource.data);
+        allow delete: if false;
+      }
+    }
+
+    match /practices/{practiceId} {
+      allow read: if isPracticeDocOwner(practiceId);
+      allow create: if isPracticeDocOwner(practiceId)
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasAll(['name', 'ownerUid', 'createdAt']);
+      allow update: if isPracticeOwner(practiceId)
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if isPracticeOwner(practiceId);
+
+      match /{document=**} {
+        allow read, write: if isPracticeOwner(practiceId);
+      }
+    }
+  }
+}
