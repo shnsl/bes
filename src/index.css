@@ -92,7 +92,7 @@ button {
   font-size: 0.85rem;
 }
 
-.nav, .google {
+.nav {
   display: grid;
   place-items: center;
   border: 0;
@@ -114,19 +114,26 @@ button {
   cursor: default;
 }
 
-.nav:focus-visible, .prayer:focus-visible, .google:focus-visible {
+.nav:focus-visible, .prayer:focus-visible, .pin:focus-visible {
   outline: 2px solid var(--ogle);
   outline-offset: 2px;
 }
 
-.google {
-  width: 4.5rem;
-  height: 4.5rem;
-  background: var(--today);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+.pin-form { display: grid; place-items: center; }
+
+.pin {
+  width: 11rem;
+  padding: 0.4rem 0;
+  border: 0;
+  border-bottom: 2px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-size: 2rem;
+  letter-spacing: 0.45rem;
+  text-align: center;
 }
 
-.google svg { width: 1.8rem; height: 1.8rem; }
+.pin-form.bad .pin { border-bottom-color: var(--aksam); }
 
 .days {
   display: flex;

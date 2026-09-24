@@ -1,5 +1,5 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth";
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -20,11 +20,12 @@ export function isFirebaseConfigured(): boolean {
   return Object.values(firebaseConfig).every((value) => typeof value === "string" && value.length > 0);
 }
 
+export const PIN_ACCOUNT_EMAIL = "ote@hosp-5f65f.firebaseapp.com";
+
 type FirebaseServices = {
   app: FirebaseApp;
   auth: Auth;
   db: Firestore;
-  googleProvider: GoogleAuthProvider;
 };
 
 let services: FirebaseServices | null = null;
@@ -41,7 +42,6 @@ export function getFirebase(): FirebaseServices | null {
           tabManager: persistentMultipleTabManager(),
         }),
       }),
-      googleProvider: new GoogleAuthProvider(),
     };
   }
   return services;
