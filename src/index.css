@@ -305,6 +305,31 @@ button {
 
 .prayer:disabled { cursor: default; }
 
+.prayer.locked {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hold-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+}
+
+.hold-count {
+  font-size: clamp(4rem, 22vmin, 8rem);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  color: var(--accent);
+  text-shadow: 0 0 28px color-mix(in srgb, var(--accent) 45%, transparent);
+  line-height: 1;
+}
+
 /* Kısa telefonlar: etiketleri daha da sıkı tut */
 @media (max-height: 680px) {
   .stage.home {

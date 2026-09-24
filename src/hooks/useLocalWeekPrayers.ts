@@ -45,12 +45,12 @@ export function useLocalWeekPrayers(weekStart: Date) {
     return next;
   }, [dateKeys, store]);
 
-  function toggle(dateKey: string, prayer: PrayerId) {
+  function setPrayer(dateKey: string, prayer: PrayerId, value: boolean) {
     if (isFutureDay(parseDateKey(dateKey))) return;
     setStore((prev) => {
       const current = prev[dateKey] ?? emptyDay();
-      if (current[prayer]) return prev;
-      const next = { ...prev, [dateKey]: { ...current, [prayer]: true } };
+      if (current[prayer] === value) return prev;
+      const next = { ...prev, [dateKey]: { ...current, [prayer]: value } };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       return next;
     });
@@ -60,6 +60,6 @@ export function useLocalWeekPrayers(weekStart: Date) {
     days,
     doneCount: countDone(days, dateKeys),
     ready: true,
-    toggle,
+    setPrayer,
   };
 }

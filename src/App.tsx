@@ -22,7 +22,16 @@ export function App() {
 
 function LocalWeek({ weekStart, onShift }: { weekStart: Date; onShift: (weeks: number) => void }) {
   const state = useLocalWeekPrayers(weekStart);
-  return <WeekScreen weekStart={weekStart} onShift={onShift} onToggle={state.toggle} {...state} />;
+  return (
+    <WeekScreen
+      weekStart={weekStart}
+      days={state.days}
+      doneCount={state.doneCount}
+      ready={state.ready}
+      onShift={onShift}
+      onSetPrayer={state.setPrayer}
+    />
+  );
 }
 
 function CloudWeek({
@@ -39,10 +48,12 @@ function CloudWeek({
   return (
     <WeekScreen
       weekStart={weekStart}
+      days={state.days}
+      doneCount={state.doneCount}
+      ready={state.ready}
       onShift={onShift}
-      onToggle={state.toggle}
+      onSetPrayer={state.setPrayer}
       onSignOut={firebase ? () => signOut(firebase.auth) : undefined}
-      {...state}
     />
   );
 }

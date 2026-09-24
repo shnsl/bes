@@ -50,12 +50,12 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
     };
   }, [uid, dateKeys]);
 
-  async function toggle(dateKey: string, prayer: PrayerId) {
+  async function setPrayer(dateKey: string, prayer: PrayerId, value: boolean) {
     const firebase = getFirebase();
     if (!firebase || !ready || isFutureDay(parseDateKey(dateKey))) return;
     const current = days[dateKey] ?? emptyDay();
-    if (current[prayer]) return;
-    const next = { ...current, [prayer]: true };
+    if (current[prayer] === value) return;
+    const next = { ...current, [prayer]: value };
     setDays((prev) => ({ ...prev, [dateKey]: next }));
     try {
       await setDoc(doc(firebase.db, "users", uid, "days", dateKey), next);
@@ -72,6 +72,6 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
     days,
     doneCount: countDone(days, dateKeys),
     ready,
-    toggle,
+    setPrayer,
   };
 }

@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { PrayerIcon } from "./PrayerIcon";
 import { ThemeToggle } from "./ThemeToggle";
 import {
@@ -15,20 +16,59 @@ import {
   type PrayerId,
 } from "../lib/week";
 
+const HOLD_MS = 10_000;
+
 type Props = {
   weekStart: Date;
   days: Record<string, DayPrayers>;
   doneCount: number;
   ready: boolean;
   onShift: (weeks: number) => void;
-  onToggle: (dateKey: string, prayer: PrayerId) => void;
+  onSetPrayer: (dateKey: string, prayer: PrayerId, value: boolean) => void;
   onSignOut?: () => void;
 };
 
-export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onToggle, onSignOut }: Props) {
+export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPrayer, onSignOut }: Props) {
   const today = new Date();
   const dates = weekDates(weekStart);
   const canNext = canGoToNextWeek(weekStart, today);
+  const [holdLeft, setHoldLeft] = useState<number | null>(null);
+  const holdRef = useRef<{
+    key: string;
+    prayer: PrayerId;
+    timer: number;
+    tick: number;
+    opened: boolean;
+  } | null>(null);
+
+  function clearHold() {
+    const active = holdRef.current;
+    if (!active) return;
+    window.clearTimeout(active.timer);
+    window.clearInterval(active.tick);
+    holdRef.current = null;
+    setHoldLeft(null);
+  }
+
+  function startUnlockHold(dateKey: string, prayer: PrayerId) {
+    clearHold();
+    const started = Date.now();
+    setHoldLeft(10);
+    const tick = window.setInterval(() => {
+      const left = Math.max(1, Math.ceil((HOLD_MS - (Date.now() - started)) / 1000));
+      setHoldLeft(left);
+    }, 100);
+    const timer = window.setTimeout(() => {
+      const active = holdRef.current;
+      if (!active) return;
+      active.opened = true;
+      window.clearInterval(active.tick);
+      holdRef.current = null;
+      setHoldLeft(null);
+      onSetPrayer(dateKey, prayer, false);
+    }, HOLD_MS);
+    holdRef.current = { key: dateKey, prayer, timer, tick, opened: false };
+  }
 
   return (
     <main className="stage home">
@@ -75,12 +115,23 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onToggl
                     <button
                       key={prayer}
                       type="button"
-                      className="prayer"
+                      className={done ? "prayer locked" : "prayer"}
                       data-prayer={prayer}
                       aria-label={`${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]}`}
                       aria-pressed={done}
-                      disabled={!ready || future || done}
-                      onClick={() => onToggle(key, prayer)}
+                      disabled={!ready || future}
+                      onClick={() => {
+                        if (!done) onSetPrayer(key, prayer, true);
+                      }}
+                      onPointerDown={(event) => {
+                        if (!done || !ready || future || event.button !== 0) return;
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                        startUnlockHold(key, prayer);
+                      }}
+                      onPointerUp={clearHold}
+                      onPointerCancel={clearHold}
+                      onLostPointerCapture={clearHold}
+                      onContextMenu={(event) => event.preventDefault()}
                     >
                       <PrayerIcon id={prayer} />
                     </button>
@@ -91,6 +142,11 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onToggl
           );
         })}
       </div>
+      {holdLeft !== null ? (
+        <div className="hold-overlay" aria-live="polite">
+          <span className="hold-count">{holdLeft}</span>
+        </div>
+      ) : null}
     </main>
   );
 }
