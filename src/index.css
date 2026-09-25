@@ -122,6 +122,34 @@ button {
   }
 }
 
+/* Yüklü PWA (standalone): tema rengi status bar; içerik çentik altına girmez */
+@media (display-mode: standalone), (display-mode: minimal-ui) {
+  .stage.home {
+    padding-top: calc(var(--pad-y) + env(safe-area-inset-top, 0px));
+  }
+
+  .stage.gate {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .stage.gate .theme {
+    top: calc(0.4rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* HTML Fullscreen API: status bar yok — üst inset kaldır */
+html:fullscreen .stage.home,
+html:fullscreen .stage.gate,
+:fullscreen .stage.home,
+:fullscreen .stage.gate {
+  padding-top: var(--pad-y, 0px);
+}
+
+html:fullscreen .stage.gate .theme,
+:fullscreen .stage.gate .theme {
+  top: 0.4rem;
+}
+
 .center { display: grid; place-items: center; }
 
 .chrome {

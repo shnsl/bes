@@ -21,6 +21,27 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="ÖTE" />
     <title>ÖTE</title>
+    <script>
+      (function () {
+        function go() {
+          if (document.fullscreenElement) return;
+          var el = document.documentElement;
+          var req = el.requestFullscreen || el.webkitRequestFullscreen;
+          if (!req) return;
+          try {
+            var p = req.call(el, { navigationUI: "hide" });
+            if (p && p.catch) p.catch(function () {});
+          } catch (e) {}
+        }
+        go();
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") go();
+        });
+        window.addEventListener("pageshow", go);
+        window.addEventListener("pointerdown", go, { capture: true });
+        window.addEventListener("touchstart", go, { capture: true, passive: true });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
