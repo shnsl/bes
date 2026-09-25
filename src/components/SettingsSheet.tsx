@@ -1,4 +1,5 @@
 import { useTheme } from "../theme";
+import { PRAYER_TIMES_LABEL } from "../lib/prayerTimes";
 
 type Props = {
   open: boolean;
@@ -42,8 +43,24 @@ export function SettingsSheet({ open, onClose, onSignOut }: Props) {
             </button>
           ) : null}
         </div>
+        <p className="settings-info">
+          <span className="settings-info-icon" aria-hidden="true">
+            <InfoIcon />
+          </span>
+          <span>{PRAYER_TIMES_LABEL}</span>
+        </p>
       </div>
     </div>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 10.5v6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="12" cy="7.2" r="1.05" fill="currentColor" />
+    </svg>
   );
 }
 

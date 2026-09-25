@@ -1,7 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DayBurst } from "./DayBurst";
 import { PrayerIcon } from "./PrayerIcon";
 import { SettingsSheet } from "./SettingsSheet";
+import { usePrayerTimes } from "../hooks/usePrayerTimes";
+import { getUpcomingPrayer, hasPrayerStarted, type DayTimes } from "../lib/prayerTimes";
 import {
   canGoToNextWeek,
   DAY_LABELS,
@@ -35,6 +37,10 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
   const today = new Date();
   const dates = weekDates(weekStart);
   const canNext = canGoToNextWeek(weekStart, today);
+  const { times: prayerTimes } = usePrayerTimes(weekStart);
+  const now = useNow(30_000);
+  const todayKey = formatDateKey(now);
+  const upcoming = getUpcomingPrayer(prayerTimes[todayKey], now);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [burstToken, setBurstToken] = useState(0);
   const [holdLeft, setHoldLeft] = useState<number | null>(null);
@@ -46,8 +52,15 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
     opened: boolean;
   } | null>(null);
 
-  function markPrayer(dateKey: string, prayer: PrayerId, day: DayPrayers | undefined) {
+  function markPrayer(
+    dateKey: string,
+    prayer: PrayerId,
+    day: DayPrayers | undefined,
+    date: Date,
+    dayTimes: DayTimes | undefined,
+  ) {
     if (day?.[prayer]) return;
+    if (!hasPrayerStarted(date, prayer, dayTimes, now)) return;
     const next = { ...emptyDay(), ...day, [prayer]: true };
     onSetPrayer(dateKey, prayer, true);
     if (!isDayComplete(day) && isDayComplete(next)) {
@@ -121,36 +134,58 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
           const future = isFutureDay(date, today);
           const todayRow = isSameDay(date, today);
           const day = days[key];
+          const dayTimes = prayerTimes[key];
           return (
             <section key={key} className={todayRow ? "day today" : future ? "day future" : "day"}>
               <p className="day-label">{DAY_LABELS[index]}</p>
               <div className="prayers">
                 {PRAYERS.map((prayer) => {
                   const done = Boolean(day?.[prayer]);
+                  const showClock = todayRow || future;
+                  const clock = showClock ? dayTimes?.[prayer] : undefined;
+                  const started = hasPrayerStarted(date, prayer, dayTimes, now);
+                  const blocked = !done && !started;
+                  const eta = todayRow && upcoming?.prayer === prayer ? upcoming.minutes : null;
                   return (
-                    <button
-                      key={prayer}
-                      type="button"
-                      className={done ? "prayer locked" : "prayer"}
-                      data-prayer={prayer}
-                      aria-label={`${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]}`}
-                      aria-pressed={done}
-                      disabled={!ready || future}
-                      onClick={() => {
-                        if (!done) markPrayer(key, prayer, day);
-                      }}
-                      onPointerDown={(event) => {
-                        if (!done || !ready || future || event.button !== 0) return;
-                        event.currentTarget.setPointerCapture(event.pointerId);
-                        startUnlockHold(key, prayer);
-                      }}
-                      onPointerUp={clearHold}
-                      onPointerCancel={clearHold}
-                      onLostPointerCapture={clearHold}
-                      onContextMenu={(event) => event.preventDefault()}
-                    >
-                      <PrayerIcon id={prayer} />
-                    </button>
+                    <div key={prayer} className="prayer-cell">
+                      <div className="prayer-stack">
+                        <span className="prayer-eta" aria-hidden="true">
+                          {eta !== null ? eta : "\u00A0"}
+                        </span>
+                        <button
+                          type="button"
+                          className={done ? "prayer locked" : blocked ? "prayer waiting" : "prayer"}
+                          data-prayer={prayer}
+                          data-eta={eta !== null ? "true" : undefined}
+                          aria-label={
+                            eta !== null
+                              ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock ?? ""} ${eta} dakika kaldı`
+                              : clock
+                                ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock}`
+                                : `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]}`
+                          }
+                          aria-pressed={done}
+                          disabled={!ready || future || blocked}
+                          onClick={() => {
+                            if (!done) markPrayer(key, prayer, day, date, dayTimes);
+                          }}
+                          onPointerDown={(event) => {
+                            if (!done || !ready || future || event.button !== 0) return;
+                            event.currentTarget.setPointerCapture(event.pointerId);
+                            startUnlockHold(key, prayer);
+                          }}
+                          onPointerUp={clearHold}
+                          onPointerCancel={clearHold}
+                          onLostPointerCapture={clearHold}
+                          onContextMenu={(event) => event.preventDefault()}
+                        >
+                          <PrayerIcon id={prayer} />
+                        </button>
+                        <span className="prayer-time" aria-hidden="true">
+                          {showClock ? (clock ?? "··:··") : "\u00A0"}
+                        </span>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -171,6 +206,23 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
       ) : null}
     </main>
   );
+}
+
+function useNow(intervalMs: number) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const id = window.setInterval(tick, intervalMs);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [intervalMs]);
+  return now;
 }
 
 function Chevron({ direction }: { direction: "left" | "right" }) {
