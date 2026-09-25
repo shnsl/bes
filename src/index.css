@@ -38,8 +38,8 @@
 
 html, body, #root {
   height: 100%;
+  min-height: 100%;
   min-height: 100dvh;
-  min-height: 100svh;
 }
 
 body {
@@ -58,8 +58,8 @@ button {
 
 .stage {
   position: relative;
+  min-height: 100%;
   min-height: 100dvh;
-  min-height: 100svh;
 }
 
 .stage.home {
@@ -70,18 +70,18 @@ button {
   --prayer-gap: clamp(0.28rem, 1.4vmin, 0.85rem);
   --label-size: clamp(0.62rem, 2.1vmin, 0.95rem);
   --prayer-max: clamp(3.2rem, 14vmin, 5.6rem);
-  height: 100dvh;
-  height: 100svh;
+  height: 100%;
+  min-height: 100dvh;
   width: min(100%, 72rem);
   margin-inline: auto;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(0.2rem, 1vh, 0.85rem);
-  padding:
-    calc(var(--pad-y) + env(safe-area-inset-top, 0px))
-    calc(var(--pad-x) + env(safe-area-inset-right, 0px))
-    calc(var(--pad-y) + env(safe-area-inset-bottom, 0px))
-    calc(var(--pad-x) + env(safe-area-inset-left, 0px));
+  /* Tam ekranda bildirim çubuğu yok; üst safe-area boşluk bırakmasın */
+  padding-top: var(--pad-y);
+  padding-right: calc(var(--pad-x) + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(var(--pad-y) + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(var(--pad-x) + env(safe-area-inset-left, 0px));
 }
 
 .stage.gate {
@@ -89,15 +89,30 @@ button {
   place-items: center;
   max-width: none;
   background: var(--bg-gate);
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .stage.gate .theme {
   position: absolute;
-  top: calc(0.4rem + env(safe-area-inset-top, 0px));
+  top: 0.4rem;
   right: 0.5rem;
   z-index: 2;
+}
+
+/* Tarayıcı sekmesinde çentik/status bar için üst boşluk kalsın */
+@media (display-mode: browser) {
+  .stage.home {
+    padding-top: calc(var(--pad-y) + env(safe-area-inset-top, 0px));
+  }
+
+  .stage.gate {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .stage.gate .theme {
+    top: calc(0.4rem + env(safe-area-inset-top, 0px));
+  }
 }
 
 .center { display: grid; place-items: center; }
