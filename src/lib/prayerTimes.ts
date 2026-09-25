@@ -10,10 +10,31 @@ const CACHE_PREFIX = "bes-vakit-9479";
 
 export type DayTimes = Record<PrayerId, string>;
 
+export type WeekPrayerData = {
+  times: Record<string, DayTimes>;
+  hijri: Record<string, string>;
+};
+
 export type UpcomingPrayer = {
   prayer: PrayerId;
   minutes: number;
 };
+
+const HIJRI_MONTHS = [
+  "",
+  "Muharrem",
+  "Safer",
+  "Rebiülevvel",
+  "Rebiülahir",
+  "Cemaziyelevvel",
+  "Cemaziyelahir",
+  "Recep",
+  "Şaban",
+  "Ramazan",
+  "Şevval",
+  "Zilkade",
+  "Zilhicce",
+] as const;
 
 type ApiDay = {
   date: string;
@@ -23,6 +44,13 @@ type ApiDay = {
     ikindi: string;
     aksam: string;
     yatsi: string;
+  };
+  hijri_date?: {
+    day?: number;
+    month?: number;
+    month_name?: string;
+    year?: number;
+    full_date?: string;
   };
 };
 
@@ -47,6 +75,18 @@ function toDayTimes(times: ApiDay["times"]): DayTimes {
   };
 }
 
+function formatHijriLabel(hijri: ApiDay["hijri_date"]): string | null {
+  if (!hijri) return null;
+  const day = hijri.day;
+  const year = hijri.year;
+  const month =
+    typeof hijri.month === "number" && hijri.month >= 1 && hijri.month <= 12
+      ? HIJRI_MONTHS[hijri.month]
+      : hijri.month_name;
+  if (!day || !month || !year) return hijri.full_date?.trim() || null;
+  return `${day} ${month} ${year}`;
+}
+
 function dateKeyFromApi(dateIso: string): string {
   return dateIso.slice(0, 10);
 }
@@ -55,19 +95,24 @@ function cacheKey(weekStartKey: string): string {
   return `${CACHE_PREFIX}:${weekStartKey}`;
 }
 
-function readCache(weekStartKey: string): Record<string, DayTimes> | null {
+function readCache(weekStartKey: string): WeekPrayerData | null {
   try {
     const raw = localStorage.getItem(cacheKey(weekStartKey));
     if (!raw) return null;
-    return JSON.parse(raw) as Record<string, DayTimes>;
+    const parsed = JSON.parse(raw) as WeekPrayerData | Record<string, DayTimes>;
+    if (parsed && typeof parsed === "object" && "times" in parsed) {
+      return parsed as WeekPrayerData;
+    }
+    // Eski yalnızca-vakit önbelleği
+    return { times: parsed as Record<string, DayTimes>, hijri: {} };
   } catch {
     return null;
   }
 }
 
-function writeCache(weekStartKey: string, times: Record<string, DayTimes>) {
+function writeCache(weekStartKey: string, data: WeekPrayerData) {
   try {
-    localStorage.setItem(cacheKey(weekStartKey), JSON.stringify(times));
+    localStorage.setItem(cacheKey(weekStartKey), JSON.stringify(data));
   } catch {
     /* quota */
   }
@@ -116,7 +161,7 @@ export function getUpcomingPrayer(times: DayTimes | undefined, now = new Date())
   return null;
 }
 
-export async function fetchWeekPrayerTimes(weekStart: Date): Promise<Record<string, DayTimes>> {
+export async function fetchWeekPrayerTimes(weekStart: Date): Promise<WeekPrayerData> {
   const weekStartKey = formatDateKey(weekStart);
   const cached = readCache(weekStartKey);
   const url = `${API_BASE}/${SAHINBEY_DISTRICT_ID}/weekly?startDate=${weekStartKey}`;
@@ -127,20 +172,41 @@ export async function fetchWeekPrayerTimes(weekStart: Date): Promise<Record<stri
     const payload = (await response.json()) as ApiResponse;
     if (!payload.data?.length) throw new Error("vakit boş");
 
-    const next: Record<string, DayTimes> = {};
+    const times: Record<string, DayTimes> = {};
+    const hijri: Record<string, string> = {};
     for (const day of payload.data) {
-      next[dateKeyFromApi(day.date)] = toDayTimes(day.times);
+      const key = dateKeyFromApi(day.date);
+      times[key] = toDayTimes(day.times);
+      const label = formatHijriLabel(day.hijri_date);
+      if (label) hijri[key] = label;
     }
 
     for (let i = 0; i < 7; i += 1) {
       const key = formatDateKey(addDays(weekStart, i));
-      if (!next[key] && cached?.[key]) next[key] = cached[key];
+      if (!times[key] && cached?.times[key]) times[key] = cached.times[key];
+      if (!hijri[key] && cached?.hijri[key]) hijri[key] = cached.hijri[key];
     }
 
+    const next = { times, hijri };
     writeCache(weekStartKey, next);
     return next;
   } catch {
     if (cached) return cached;
     throw new Error("Ezan vakitleri alınamadı");
+  }
+}
+
+/** Bugünün hicri tarihi (ör. 11 Şaban 1444) */
+export async function fetchTodayHijriLabel(now = new Date()): Promise<string | null> {
+  const todayKey = formatDateKey(now);
+  const url = `${API_BASE}/${SAHINBEY_DISTRICT_ID}/daily?startDate=${todayKey}`;
+  try {
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`hicri ${response.status}`);
+    const payload = (await response.json()) as ApiResponse;
+    const day = payload.data?.find((item) => dateKeyFromApi(item.date) === todayKey) ?? payload.data?.[0];
+    return formatHijriLabel(day?.hijri_date);
+  } catch {
+    return null;
   }
 }

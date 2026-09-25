@@ -56,11 +56,14 @@ export function PrayerIcon({ id }: Props) {
 
   return (
     <svg {...common}>
-      <path
-        d="M15.2 4.6a6.4 6.4 0 1 0 4.2 10.8A5.2 5.2 0 0 1 15.2 4.6z"
-        fill="currentColor"
-        stroke="none"
-      />
+      <g transform="translate(1.1 0)">
+        <path
+          d="M20.5 12.7A8.2 8.2 0 1 1 11.4 3.9 6.5 6.5 0 0 0 20.5 12.7z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.7}
+        />
+      </g>
     </svg>
   );
 }

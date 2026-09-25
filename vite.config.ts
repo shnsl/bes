@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon-32.png", "apple-touch-icon.png"],
+      includeAssets: ["favicon-32.png", "apple-touch-icon.png", "fonts/*"],
       manifest: {
         name: "ÖTE",
         short_name: "ÖTE",
@@ -31,7 +31,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,otf,ttf,woff2}"],
         navigateFallback: "index.html",
       },
     }),

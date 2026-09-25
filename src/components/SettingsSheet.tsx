@@ -1,14 +1,36 @@
+import { useEffect, useState } from "react";
 import { useTheme } from "../theme";
-import { PRAYER_TIMES_LABEL } from "../lib/prayerTimes";
+import { useFont } from "../lib/font";
+import { fetchTodayHijriLabel, PRAYER_TIMES_LABEL } from "../lib/prayerTimes";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSignOut?: () => void;
+  /** Haftalık veriden gelen hicri; yoksa günlük API ile tamamlanır */
+  hijriLabel?: string | null;
 };
 
-export function SettingsSheet({ open, onClose, onSignOut }: Props) {
+export function SettingsSheet({ open, onClose, onSignOut, hijriLabel }: Props) {
   const { theme, toggle } = useTheme();
+  const { font, cycleFont } = useFont();
+  const [hijri, setHijri] = useState<string | null>(hijriLabel ?? null);
+
+  useEffect(() => {
+    if (!open) return;
+    if (hijriLabel) {
+      setHijri(hijriLabel);
+      return;
+    }
+    let active = true;
+    fetchTodayHijriLabel().then((label) => {
+      if (active) setHijri(label);
+    });
+    return () => {
+      active = false;
+    };
+  }, [open, hijriLabel]);
+
   if (!open) return null;
   const toDark = theme === "light";
 
@@ -29,6 +51,15 @@ export function SettingsSheet({ open, onClose, onSignOut }: Props) {
           >
             {toDark ? <MoonIcon /> : <SunIcon />}
           </button>
+          <button
+            type="button"
+            className="settings-icon"
+            aria-label={`Yazı tipi: ${font.label}. Sonraki tipi seç`}
+            title={font.label}
+            onClick={cycleFont}
+          >
+            <FontIcon />
+          </button>
           {onSignOut ? (
             <button
               type="button"
@@ -43,14 +74,33 @@ export function SettingsSheet({ open, onClose, onSignOut }: Props) {
             </button>
           ) : null}
         </div>
-        <p className="settings-info">
+        <p className="settings-font-name">{font.label}</p>
+        <div className="settings-info">
           <span className="settings-info-icon" aria-hidden="true">
             <InfoIcon />
           </span>
-          <span>{PRAYER_TIMES_LABEL}</span>
-        </p>
+          <div className="settings-info-text">
+            <p className="settings-info-place">{PRAYER_TIMES_LABEL}</p>
+            {hijri ? <p className="settings-info-hijri">{hijri}</p> : null}
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function FontIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4 19h4.2M6.1 19 11 5h2l4.9 14H22M8.2 13.5h7.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

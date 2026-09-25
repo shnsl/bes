@@ -37,7 +37,7 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
   const today = new Date();
   const dates = weekDates(weekStart);
   const canNext = canGoToNextWeek(weekStart, today);
-  const { times: prayerTimes } = usePrayerTimes(weekStart);
+  const { times: prayerTimes, todayHijri } = usePrayerTimes(weekStart);
   const now = useNow(30_000);
   const todayKey = formatDateKey(now);
   const upcoming = getUpcomingPrayer(prayerTimes[todayKey], now);
@@ -100,12 +100,6 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
   return (
     <main className="stage home">
       <header className="chrome">
-        <div className="topbar">
-          <span className="topbar-spacer" aria-hidden="true" />
-          <button type="button" className="nav" aria-label="Ayarlar" onClick={() => setSettingsOpen(true)}>
-            <SettingsIcon />
-          </button>
-        </div>
         <div className="summary-row" style={{ visibility: ready ? "visible" : "hidden" }}>
           <button type="button" className="nav" aria-label="Önceki hafta" onClick={() => onShift(-1)}>
             <Chevron direction="left" />
@@ -193,11 +187,17 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
           );
         })}
       </div>
+      <footer className="dock">
+        <button type="button" className="nav" aria-label="Ayarlar" onClick={() => setSettingsOpen(true)}>
+          <SettingsIcon />
+        </button>
+      </footer>
       <DayBurst token={burstToken} />
       <SettingsSheet
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onSignOut={onSignOut}
+        hijriLabel={todayHijri}
       />
       {holdLeft !== null ? (
         <div className="hold-overlay" aria-live="polite">
