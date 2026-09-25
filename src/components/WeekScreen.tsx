@@ -1,10 +1,13 @@
 import { useRef, useState } from "react";
+import { DayBurst } from "./DayBurst";
 import { PrayerIcon } from "./PrayerIcon";
-import { ThemeToggle } from "./ThemeToggle";
+import { SettingsSheet } from "./SettingsSheet";
 import {
   canGoToNextWeek,
   DAY_LABELS,
+  emptyDay,
   formatDateKey,
+  isDayComplete,
   isFutureDay,
   isSameDay,
   PRAYER_LABELS,
@@ -32,6 +35,8 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
   const today = new Date();
   const dates = weekDates(weekStart);
   const canNext = canGoToNextWeek(weekStart, today);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [burstToken, setBurstToken] = useState(0);
   const [holdLeft, setHoldLeft] = useState<number | null>(null);
   const holdRef = useRef<{
     key: string;
@@ -40,6 +45,15 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
     tick: number;
     opened: boolean;
   } | null>(null);
+
+  function markPrayer(dateKey: string, prayer: PrayerId, day: DayPrayers | undefined) {
+    if (day?.[prayer]) return;
+    const next = { ...emptyDay(), ...day, [prayer]: true };
+    onSetPrayer(dateKey, prayer, true);
+    if (!isDayComplete(day) && isDayComplete(next)) {
+      setBurstToken((n) => n + 1);
+    }
+  }
 
   function clearHold() {
     const active = holdRef.current;
@@ -72,32 +86,34 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
 
   return (
     <main className="stage home">
-      <header className="topbar">
-        <button type="button" className="nav" aria-label="Önceki hafta" onClick={() => onShift(-1)}>
-          <Chevron direction="left" />
-        </button>
-        <div className="summary-block" style={{ visibility: ready ? "visible" : "hidden" }}>
-          <p className="summary">
-            <span className="summary-done">{doneCount}</span>
-            <span className="summary-total">/{WEEK_TOTAL}</span>
-          </p>
-          <p className="range">{weekRangeLabel(weekStart, today)}</p>
-        </div>
-        <button
-          type="button"
-          className="nav"
-          aria-label="Sonraki hafta"
-          disabled={!canNext}
-          onClick={() => onShift(1)}
-        >
-          <Chevron direction="right" />
-        </button>
-        <ThemeToggle />
-        {onSignOut ? (
-          <button type="button" className="nav exit" aria-label="Çıkış" onClick={onSignOut}>
-            <ExitIcon />
+      <header className="chrome">
+        <div className="topbar">
+          <span className="topbar-spacer" aria-hidden="true" />
+          <button type="button" className="nav" aria-label="Ayarlar" onClick={() => setSettingsOpen(true)}>
+            <SettingsIcon />
           </button>
-        ) : null}
+        </div>
+        <div className="summary-row" style={{ visibility: ready ? "visible" : "hidden" }}>
+          <button type="button" className="nav" aria-label="Önceki hafta" onClick={() => onShift(-1)}>
+            <Chevron direction="left" />
+          </button>
+          <div className="summary-block">
+            <p className="summary">
+              <span className="summary-done">{doneCount}</span>
+              <span className="summary-total">/{WEEK_TOTAL}</span>
+            </p>
+            <p className="range">{weekRangeLabel(weekStart, today)}</p>
+          </div>
+          <button
+            type="button"
+            className="nav"
+            aria-label="Sonraki hafta"
+            disabled={!canNext}
+            onClick={() => onShift(1)}
+          >
+            <Chevron direction="right" />
+          </button>
+        </div>
       </header>
       <div className="days">
         {dates.map((date, index) => {
@@ -121,7 +137,7 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
                       aria-pressed={done}
                       disabled={!ready || future}
                       onClick={() => {
-                        if (!done) onSetPrayer(key, prayer, true);
+                        if (!done) markPrayer(key, prayer, day);
                       }}
                       onPointerDown={(event) => {
                         if (!done || !ready || future || event.button !== 0) return;
@@ -142,6 +158,12 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
           );
         })}
       </div>
+      <DayBurst token={burstToken} />
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onSignOut={onSignOut}
+      />
       {holdLeft !== null ? (
         <div className="hold-overlay" aria-live="polite">
           <span className="hold-count">{holdLeft}</span>
@@ -166,17 +188,17 @@ function Chevron({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-function ExitIcon() {
+function SettingsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path
-        d="M10 7V5H6v14h4v-2M10 12H19M16 9l3 3-3 3"
+        d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.1 7.1 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 14.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.6.24-1.15.55-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L3.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.48.39 1.03.7 1.63.94l.36 2.54c.05.24.25.42.49.42h3.8c.24 0 .44-.18.49-.42l.36-2.54c.6-.24 1.15-.55 1.63-.94l2.39.96c.25.1.54 0 .68-.22l1.92-3.32a.5.5 0 0 0-.12-.64z"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
+        strokeWidth="1.5"
         strokeLinejoin="round"
       />
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }

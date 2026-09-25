@@ -7,7 +7,7 @@ export function PrayerIcon({ id }: Props) {
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 1.8,
+    strokeWidth: 2,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     "aria-hidden": true,
@@ -56,7 +56,11 @@ export function PrayerIcon({ id }: Props) {
 
   return (
     <svg {...common}>
-      <path d="M15.2 4.6a6.4 6.4 0 1 0 4.2 10.8A5.2 5.2 0 0 1 15.2 4.6z" fill="currentColor" stroke="none" />
+      <path
+        d="M15.2 4.6a6.4 6.4 0 1 0 4.2 10.8A5.2 5.2 0 0 1 15.2 4.6z"
+        fill="currentColor"
+        stroke="none"
+      />
     </svg>
   );
 }

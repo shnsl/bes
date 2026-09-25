@@ -18,6 +18,11 @@ const MONTHS = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl",
 
 export const WEEK_TOTAL = 35;
 
+export function isDayComplete(day: DayPrayers | undefined): boolean {
+  if (!day) return false;
+  return PRAYERS.every((prayer) => day[prayer]);
+}
+
 export function emptyDay(): DayPrayers {
   return { sabah: false, ogle: false, ikindi: false, aksam: false, yatsi: false };
 }

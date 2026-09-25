@@ -38,8 +38,9 @@
 
 html, body, #root {
   height: 100%;
-  min-height: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 body {
@@ -58,26 +59,27 @@ button {
 
 .stage {
   position: relative;
-  min-height: 100%;
-  min-height: 100dvh;
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 .stage.home {
-  --pad-x: clamp(0.4rem, 2.2vw, 1.75rem);
-  --pad-y: clamp(0.2rem, 1.1vh, 1.1rem);
-  --bar-size: clamp(2.2rem, 7vmin, 3.1rem);
-  --day-gap: clamp(0.2rem, 0.9vh, 0.65rem);
-  --prayer-gap: clamp(0.28rem, 1.4vmin, 0.85rem);
-  --label-size: clamp(0.62rem, 2.1vmin, 0.95rem);
-  --prayer-max: clamp(3.2rem, 14vmin, 5.6rem);
+  --pad-x: clamp(0.35rem, 2vw, 1.5rem);
+  --pad-y: clamp(0.12rem, 0.8vh, 0.7rem);
+  --bar-size: clamp(2rem, 6.2vmin, 2.8rem);
+  --day-gap: clamp(0.12rem, 0.7vh, 0.5rem);
+  --prayer-gap: clamp(0.22rem, 1.2vmin, 0.7rem);
+  --label-size: clamp(0.58rem, 1.8vmin, 0.85rem);
+  --prayer-max: clamp(2.6rem, 12vmin, 5.2rem);
   height: 100%;
-  min-height: 100dvh;
+  max-height: 100dvh;
   width: min(100%, 72rem);
   margin-inline: auto;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: clamp(0.2rem, 1vh, 0.85rem);
-  /* Tam ekranda bildirim çubuğu yok; üst safe-area boşluk bırakmasın */
+  gap: clamp(0.1rem, 0.6vh, 0.45rem);
+  overflow: hidden;
   padding-top: var(--pad-y);
   padding-right: calc(var(--pad-x) + env(safe-area-inset-right, 0px));
   padding-bottom: calc(var(--pad-y) + env(safe-area-inset-bottom, 0px));
@@ -88,9 +90,12 @@ button {
   display: grid;
   place-items: center;
   max-width: none;
+  min-height: 100%;
+  min-height: 100dvh;
   background: var(--bg-gate);
   padding-top: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow: auto;
 }
 
 .stage.gate .theme {
@@ -117,38 +122,55 @@ button {
 
 .center { display: grid; place-items: center; }
 
+.chrome {
+  display: grid;
+  gap: 0.05rem;
+  min-height: 0;
+  flex-shrink: 0;
+}
+
 .topbar {
   display: grid;
-  grid-template-columns: var(--bar-size) minmax(0, 1fr) var(--bar-size) var(--bar-size);
+  grid-template-columns: minmax(0, 1fr) var(--bar-size);
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.1rem;
   min-height: var(--bar-size);
 }
 
-.topbar:has(.exit) {
-  grid-template-columns: var(--bar-size) minmax(0, 1fr) var(--bar-size) var(--bar-size) var(--bar-size);
+.topbar-spacer { min-width: 0; }
+
+.summary-row {
+  display: grid;
+  grid-template-columns: var(--bar-size) minmax(0, 1fr) var(--bar-size);
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 0;
 }
 
-.summary-block { text-align: center; }
+.summary-block {
+  text-align: center;
+  padding-block: 0;
+  min-width: 0;
+}
 
 .summary { margin: 0; line-height: 1; }
 
 .summary-done {
-  font-size: clamp(1.25rem, 5.2vmin, 2.6rem);
+  font-size: clamp(1.1rem, 4.2vmin, 2.2rem);
   font-weight: 650;
   letter-spacing: -0.04em;
 }
 
 .summary-total {
-  font-size: clamp(0.8rem, 3vmin, 1.35rem);
+  font-size: clamp(0.75rem, 2.6vmin, 1.2rem);
   font-weight: 560;
   color: var(--muted);
 }
 
 .range {
-  margin: 0.12rem 0 0;
+  margin: 0.08rem 0 0;
   color: var(--muted);
-  font-size: clamp(0.66rem, 2.3vmin, 0.95rem);
+  font-size: clamp(0.62rem, 2vmin, 0.9rem);
 }
 
 .nav {
@@ -246,6 +268,7 @@ button {
   gap: var(--day-gap);
   min-height: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 .day {
@@ -301,22 +324,75 @@ button {
   place-items: center;
   cursor: pointer;
   padding: 0;
+  transition: transform 160ms ease, box-shadow 220ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
-.prayer svg { width: 48%; height: 48%; }
+.prayer svg {
+  width: 48%;
+  height: 48%;
+  animation: icon-drift 4.8s ease-in-out infinite;
+}
 
-.prayer[data-prayer="sabah"] { color: var(--sabah); border-color: color-mix(in srgb, var(--sabah) 55%, var(--line)); }
-.prayer[data-prayer="ogle"] { color: var(--ogle); border-color: color-mix(in srgb, var(--ogle) 55%, var(--line)); }
-.prayer[data-prayer="ikindi"] { color: var(--ikindi); border-color: color-mix(in srgb, var(--ikindi) 55%, var(--line)); }
-.prayer[data-prayer="aksam"] { color: var(--aksam); border-color: color-mix(in srgb, var(--aksam) 55%, var(--line)); }
-.prayer[data-prayer="yatsi"] { color: var(--yatsi); border-color: color-mix(in srgb, var(--yatsi) 55%, var(--line)); }
+.prayer[data-prayer="sabah"] svg { animation-delay: 0s; }
+.prayer[data-prayer="ogle"] svg { animation-delay: 0.35s; }
+.prayer[data-prayer="ikindi"] svg { animation-delay: 0.7s; }
+.prayer[data-prayer="aksam"] svg { animation-delay: 1.05s; }
+.prayer[data-prayer="yatsi"] svg { animation-delay: 1.4s; }
 
-.prayer[aria-pressed="true"] { color: var(--on-prayer); }
-.prayer[data-prayer="sabah"][aria-pressed="true"] { background: var(--sabah); border-color: var(--sabah); }
-.prayer[data-prayer="ogle"][aria-pressed="true"] { background: var(--ogle); border-color: var(--ogle); }
-.prayer[data-prayer="ikindi"][aria-pressed="true"] { background: var(--ikindi); border-color: var(--ikindi); }
-.prayer[data-prayer="aksam"][aria-pressed="true"] { background: var(--aksam); border-color: var(--aksam); }
-.prayer[data-prayer="yatsi"][aria-pressed="true"] { background: var(--yatsi); border-color: var(--yatsi); }
+.prayer:not(:disabled):active {
+  transform: scale(0.94);
+}
+
+.prayer:not([aria-pressed="true"]):not(:disabled) {
+  opacity: 0.72;
+}
+
+.prayer[aria-pressed="true"] {
+  animation: icon-pop 420ms ease;
+  box-shadow: none;
+  border-width: 2.5px;
+  opacity: 1;
+}
+
+.prayer[aria-pressed="true"] svg {
+  width: 54%;
+  height: 54%;
+  animation: none;
+  opacity: 1;
+  stroke-width: 2.35;
+}
+
+.prayer[data-prayer="sabah"] { color: var(--sabah); border-color: color-mix(in srgb, var(--sabah) 45%, var(--line)); }
+.prayer[data-prayer="ogle"] { color: var(--ogle); border-color: color-mix(in srgb, var(--ogle) 45%, var(--line)); }
+.prayer[data-prayer="ikindi"] { color: var(--ikindi); border-color: color-mix(in srgb, var(--ikindi) 45%, var(--line)); }
+.prayer[data-prayer="aksam"] { color: var(--aksam); border-color: color-mix(in srgb, var(--aksam) 45%, var(--line)); }
+.prayer[data-prayer="yatsi"] { color: var(--yatsi); border-color: color-mix(in srgb, var(--yatsi) 45%, var(--line)); }
+
+.prayer[data-prayer="sabah"][aria-pressed="true"] {
+  color: var(--on-prayer);
+  background: var(--sabah);
+  border-color: var(--sabah);
+}
+.prayer[data-prayer="ogle"][aria-pressed="true"] {
+  color: var(--on-prayer);
+  background: var(--ogle);
+  border-color: var(--ogle);
+}
+.prayer[data-prayer="ikindi"][aria-pressed="true"] {
+  color: var(--on-prayer);
+  background: var(--ikindi);
+  border-color: var(--ikindi);
+}
+.prayer[data-prayer="aksam"][aria-pressed="true"] {
+  color: var(--on-prayer);
+  background: var(--aksam);
+  border-color: var(--aksam);
+}
+.prayer[data-prayer="yatsi"][aria-pressed="true"] {
+  color: var(--on-prayer);
+  background: var(--yatsi);
+  border-color: var(--yatsi);
+}
 
 .prayer:disabled { cursor: default; }
 
@@ -343,6 +419,117 @@ button {
   color: var(--accent);
   text-shadow: 0 0 28px color-mix(in srgb, var(--accent) 45%, transparent);
   line-height: 1;
+}
+
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  align-items: end;
+  justify-items: stretch;
+  background: color-mix(in srgb, #000 45%, transparent);
+  padding: 0.75rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.settings-sheet {
+  width: min(24rem, 100%);
+  margin-inline: auto;
+  border-radius: 1.4rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 1rem 1.1rem 1.15rem;
+  box-shadow: 0 16px 40px color-mix(in srgb, #000 28%, transparent);
+}
+
+.settings-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.settings-icon {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.settings-icon svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.settings-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@keyframes icon-drift {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.92; }
+  50% { transform: translateY(-6%) scale(1.04); opacity: 1; }
+}
+
+@keyframes icon-glow {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+  50% { transform: scale(1.06); filter: drop-shadow(0 0 6px color-mix(in srgb, currentColor 55%, transparent)); }
+}
+
+@keyframes icon-pop {
+  0% { transform: scale(0.86); }
+  55% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.day-burst {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.day-burst-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--accent) 48%, transparent), transparent 60%);
+}
+
+.day-burst-ring {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--accent) 90%, #fff);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 55%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+.day-burst-spark {
+  position: absolute;
+  display: block;
+  background: currentColor;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  box-shadow: 0 0 12px currentColor;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prayer svg,
+  .prayer[aria-pressed="true"],
+  .prayer[aria-pressed="true"] svg {
+    animation: none !important;
+  }
 }
 
 /* Kısa telefonlar: etiketleri daha da sıkı tut */
@@ -378,11 +565,11 @@ button {
 /* Tablet ve üstü */
 @media (min-width: 768px) {
   .stage.home {
-    --pad-x: clamp(1rem, 3vw, 2rem);
-    --pad-y: clamp(0.7rem, 2vh, 1.4rem);
-    --day-gap: clamp(0.35rem, 1.1vh, 0.75rem);
-    --prayer-gap: clamp(0.45rem, 1.6vmin, 1rem);
-    --prayer-max: clamp(4rem, 11vmin, 5.8rem);
+    --pad-x: clamp(0.8rem, 2.5vw, 1.6rem);
+    --pad-y: clamp(0.35rem, 1.2vh, 0.9rem);
+    --day-gap: clamp(0.25rem, 0.9vh, 0.55rem);
+    --prayer-gap: clamp(0.4rem, 1.4vmin, 0.85rem);
+    --prayer-max: clamp(3.6rem, 10vmin, 5.2rem);
   }
 }
 
