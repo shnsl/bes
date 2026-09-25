@@ -100,6 +100,7 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
   return (
     <main className="stage home">
       <header className="chrome">
+        <div className="topbar" aria-hidden="true" />
         <div className="summary-row" style={{ visibility: ready ? "visible" : "hidden" }}>
           <button type="button" className="nav" aria-label="Önceki hafta" onClick={() => onShift(-1)}>
             <Chevron direction="left" />

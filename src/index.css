@@ -72,8 +72,8 @@ button {
   --bar-size: clamp(2rem, 6.2vmin, 2.8rem);
   --day-gap: clamp(0.12rem, 0.7vh, 0.5rem);
   --prayer-gap: clamp(0.22rem, 1.2vmin, 0.7rem);
-  --label-size: clamp(0.58rem, 1.8vmin, 0.85rem);
-  --prayer-max: clamp(2.6rem, 12vmin, 5.2rem);
+  --clock-size: clamp(0.88rem, 3.2vmin, 1.15rem);
+  --prayer-max: clamp(3.45rem, 15.5vmin, 6.6rem);
   height: 100%;
   max-height: 100dvh;
   width: min(100%, 72rem);
@@ -129,6 +129,10 @@ button {
   gap: 0.05rem;
   min-height: 0;
   flex-shrink: 0;
+}
+
+.topbar {
+  min-height: var(--bar-size);
 }
 
 .summary-row {
@@ -291,7 +295,7 @@ button {
   margin: 0;
   text-align: left;
   padding-left: 0.12rem;
-  font-size: var(--label-size);
+  font-size: var(--clock-size);
   font-weight: 650;
   letter-spacing: 0.02em;
   color: var(--muted);
@@ -353,7 +357,7 @@ button {
 .prayer-eta {
   margin: 0;
   flex: 0 0 auto;
-  font-size: clamp(0.88rem, 3.2vmin, 1.15rem);
+  font-size: var(--clock-size);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
@@ -399,8 +403,8 @@ button {
 .prayer-cell:has([data-prayer="yatsi"][data-eta="true"]) .prayer-eta { color: color-mix(in srgb, var(--yatsi) 75%, var(--muted)); }
 
 .prayer svg {
-  width: 48%;
-  height: 48%;
+  width: 52%;
+  height: 52%;
   animation: icon-drift 4.8s ease-in-out infinite;
 }
 
@@ -668,7 +672,6 @@ button {
   .stage.home {
     --pad-y: 0.12rem;
     --day-gap: 0.16rem;
-    --label-size: 0.58rem;
   }
 
   .day { gap: 0.06rem; padding-block: 0.08rem; }
@@ -677,7 +680,7 @@ button {
 /* Geniş telefon / küçük tablet: yan etiket */
 @media (min-width: 640px) {
   .stage.home {
-    --prayer-max: clamp(3.6rem, 12vmin, 5.2rem);
+    --prayer-max: clamp(4.6rem, 15.5vmin, 6.6rem);
   }
 
   .day {
@@ -700,7 +703,7 @@ button {
     --pad-y: clamp(0.35rem, 1.2vh, 0.9rem);
     --day-gap: clamp(0.25rem, 0.9vh, 0.55rem);
     --prayer-gap: clamp(0.4rem, 1.4vmin, 0.85rem);
-    --prayer-max: clamp(3.6rem, 10vmin, 5.2rem);
+    --prayer-max: clamp(4.6rem, 13vmin, 6.6rem);
   }
 }
 
@@ -708,14 +711,14 @@ button {
 @media (min-width: 960px) {
   .stage.home {
     width: min(100%, 58rem);
-    --prayer-max: 5.2rem;
+    --prayer-max: 6.6rem;
   }
 }
 
 @media (min-width: 1200px) {
   .stage.home {
     width: min(100%, 64rem);
-    --prayer-max: 5.4rem;
+    --prayer-max: 6.8rem;
   }
 }
 
@@ -724,8 +727,8 @@ button {
   .stage.home {
     --pad-y: 0.1rem;
     --day-gap: 0.12rem;
-    --label-size: 0.55rem;
-    --prayer-max: 2.8rem;
+    --clock-size: 0.72rem;
+    --prayer-max: 3.55rem;
     --bar-size: 2rem;
   }
 
