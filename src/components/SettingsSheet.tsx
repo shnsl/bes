@@ -9,9 +9,18 @@ type Props = {
   onSignOut?: () => void;
   /** Haftalık veriden gelen hicri; yoksa günlük API ile tamamlanır */
   hijriLabel?: string | null;
+  canNextWeek: boolean;
+  onShiftWeek: (weeks: number) => void;
 };
 
-export function SettingsSheet({ open, onClose, onSignOut, hijriLabel }: Props) {
+export function SettingsSheet({
+  open,
+  onClose,
+  onSignOut,
+  hijriLabel,
+  canNextWeek,
+  onShiftWeek,
+}: Props) {
   const { theme, toggle } = useTheme();
   const { font, cycleFont } = useFont();
   const [hijri, setHijri] = useState<string | null>(hijriLabel ?? null);
@@ -43,6 +52,23 @@ export function SettingsSheet({ open, onClose, onSignOut, hijriLabel }: Props) {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="settings-icons">
+          <button
+            type="button"
+            className="settings-icon"
+            aria-label="Önceki hafta"
+            onClick={() => onShiftWeek(-1)}
+          >
+            <ChevronIcon direction="left" />
+          </button>
+          <button
+            type="button"
+            className="settings-icon"
+            aria-label="Sonraki hafta"
+            disabled={!canNextWeek}
+            onClick={() => onShiftWeek(1)}
+          >
+            <ChevronIcon direction="right" />
+          </button>
           <button
             type="button"
             className="settings-icon"
@@ -86,6 +112,21 @@ export function SettingsSheet({ open, onClose, onSignOut, hijriLabel }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ChevronIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d={direction === "left" ? "M14.5 6 8.5 12l6 6" : "M9.5 6l6 6-6 6"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

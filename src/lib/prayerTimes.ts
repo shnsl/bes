@@ -6,9 +6,12 @@ export const SAHINBEY_DISTRICT_ID = "9479";
 export const PRAYER_TIMES_LABEL = "Gaziantep · Şahinbey";
 
 const API_BASE = "https://ezanvakti.imsakiyem.com/api/prayer-times";
-const CACHE_PREFIX = "bes-vakit-9479";
+const CACHE_PREFIX = "bes-vakit-9479-v2";
 
-export type DayTimes = Record<PrayerId, string>;
+export type DayTimes = Record<PrayerId, string> & {
+  /** Güneş doğuşu (kerahat için) */
+  gunes: string;
+};
 
 export type WeekPrayerData = {
   times: Record<string, DayTimes>;
@@ -40,6 +43,7 @@ type ApiDay = {
   date: string;
   times: {
     imsak: string;
+    gunes: string;
     ogle: string;
     ikindi: string;
     aksam: string;
@@ -68,6 +72,7 @@ function normalizeClock(value: string): string {
 function toDayTimes(times: ApiDay["times"]): DayTimes {
   return {
     sabah: normalizeClock(times.imsak),
+    gunes: normalizeClock(times.gunes),
     ogle: normalizeClock(times.ogle),
     ikindi: normalizeClock(times.ikindi),
     aksam: normalizeClock(times.aksam),
@@ -159,6 +164,38 @@ export function getUpcomingPrayer(times: DayTimes | undefined, now = new Date())
     }
   }
   return null;
+}
+
+const OGLE_KERAHAT_MIN = 20;
+const AKSAM_KERAHAT_MIN = 45;
+const GUNES_KERAHAT_MIN = 45;
+
+/**
+ * Kerahat (namaz kılınmayan) dilimleri:
+ * 1) Güneş doğuşundan sonraki 45 dk
+ * 2) Öğleden 20 dk önce → öğle
+ * 3) Akşamdan 45 dk önce → akşam
+ */
+export function isKerahatNow(times: DayTimes | undefined, now = new Date()): boolean {
+  if (!times?.gunes || !times.ogle || !times.aksam) return false;
+
+  const gunes = clockToDate(now, times.gunes);
+  const ogle = clockToDate(now, times.ogle);
+  const aksam = clockToDate(now, times.aksam);
+  if (!gunes || !ogle || !aksam) return false;
+
+  const t = now.getTime();
+
+  const gunesEnd = gunes.getTime() + GUNES_KERAHAT_MIN * 60_000;
+  if (t >= gunes.getTime() && t < gunesEnd) return true;
+
+  const ogleStart = ogle.getTime() - OGLE_KERAHAT_MIN * 60_000;
+  if (t >= ogleStart && t < ogle.getTime()) return true;
+
+  const aksamStart = aksam.getTime() - AKSAM_KERAHAT_MIN * 60_000;
+  if (t >= aksamStart && t < aksam.getTime()) return true;
+
+  return false;
 }
 
 export async function fetchWeekPrayerTimes(weekStart: Date): Promise<WeekPrayerData> {

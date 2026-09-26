@@ -26,7 +26,6 @@ function LocalWeek({ weekStart, onShift }: { weekStart: Date; onShift: (weeks: n
     <WeekScreen
       weekStart={weekStart}
       days={state.days}
-      doneCount={state.doneCount}
       ready={state.ready}
       onShift={onShift}
       onSetPrayer={state.setPrayer}
@@ -49,7 +48,6 @@ function CloudWeek({
     <WeekScreen
       weekStart={weekStart}
       days={state.days}
-      doneCount={state.doneCount}
       ready={state.ready}
       onShift={onShift}
       onSetPrayer={state.setPrayer}

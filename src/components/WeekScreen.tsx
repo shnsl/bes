@@ -3,7 +3,7 @@ import { DayBurst } from "./DayBurst";
 import { PrayerIcon } from "./PrayerIcon";
 import { SettingsSheet } from "./SettingsSheet";
 import { usePrayerTimes } from "../hooks/usePrayerTimes";
-import { getUpcomingPrayer, hasPrayerStarted, type DayTimes } from "../lib/prayerTimes";
+import { getUpcomingPrayer, hasPrayerStarted, isKerahatNow, type DayTimes } from "../lib/prayerTimes";
 import {
   canGoToNextWeek,
   DAY_LABELS,
@@ -14,9 +14,7 @@ import {
   isSameDay,
   PRAYER_LABELS,
   PRAYERS,
-  WEEK_TOTAL,
   weekDates,
-  weekRangeLabel,
   type DayPrayers,
   type PrayerId,
 } from "../lib/week";
@@ -26,14 +24,13 @@ const HOLD_MS = 10_000;
 type Props = {
   weekStart: Date;
   days: Record<string, DayPrayers>;
-  doneCount: number;
   ready: boolean;
   onShift: (weeks: number) => void;
   onSetPrayer: (dateKey: string, prayer: PrayerId, value: boolean) => void;
   onSignOut?: () => void;
 };
 
-export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPrayer, onSignOut }: Props) {
+export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSignOut }: Props) {
   const today = new Date();
   const dates = weekDates(weekStart);
   const canNext = canGoToNextWeek(weekStart, today);
@@ -41,6 +38,7 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
   const now = useNow(30_000);
   const todayKey = formatDateKey(now);
   const upcoming = getUpcomingPrayer(prayerTimes[todayKey], now);
+  const kerahat = isKerahatNow(prayerTimes[todayKey], now);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [burstToken, setBurstToken] = useState(0);
   const [holdLeft, setHoldLeft] = useState<number | null>(null);
@@ -101,27 +99,6 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
     <main className="stage home">
       <header className="chrome">
         <div className="topbar" aria-hidden="true" />
-        <div className="summary-row" style={{ visibility: ready ? "visible" : "hidden" }}>
-          <button type="button" className="nav" aria-label="Önceki hafta" onClick={() => onShift(-1)}>
-            <Chevron direction="left" />
-          </button>
-          <div className="summary-block">
-            <p className="summary">
-              <span className="summary-done">{doneCount}</span>
-              <span className="summary-total">/{WEEK_TOTAL}</span>
-            </p>
-            <p className="range">{weekRangeLabel(weekStart, today)}</p>
-          </div>
-          <button
-            type="button"
-            className="nav"
-            aria-label="Sonraki hafta"
-            disabled={!canNext}
-            onClick={() => onShift(1)}
-          >
-            <Chevron direction="right" />
-          </button>
-        </div>
       </header>
       <div className="days">
         {dates.map((date, index) => {
@@ -189,7 +166,13 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
         })}
       </div>
       <footer className="dock">
-        <button type="button" className="nav" aria-label="Ayarlar" onClick={() => setSettingsOpen(true)}>
+        <button
+          type="button"
+          className={kerahat ? "nav dock-signal kerahat" : "nav dock-signal ok"}
+          aria-label={kerahat ? "Ayarlar — kerahat vakti" : "Ayarlar"}
+          title={kerahat ? "Kerahat vakti" : "Kerahat dışı"}
+          onClick={() => setSettingsOpen(true)}
+        >
           <SettingsIcon />
         </button>
       </footer>
@@ -199,6 +182,8 @@ export function WeekScreen({ weekStart, days, doneCount, ready, onShift, onSetPr
         onClose={() => setSettingsOpen(false)}
         onSignOut={onSignOut}
         hijriLabel={todayHijri}
+        canNextWeek={canNext}
+        onShiftWeek={onShift}
       />
       {holdLeft !== null ? (
         <div className="hold-overlay" aria-live="polite">
@@ -224,21 +209,6 @@ function useNow(intervalMs: number) {
     };
   }, [intervalMs]);
   return now;
-}
-
-function Chevron({ direction }: { direction: "left" | "right" }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d={direction === "left" ? "M14.5 6 8.5 12l6 6" : "M9.5 6l6 6-6 6"}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 function SettingsIcon() {

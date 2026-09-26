@@ -137,19 +137,6 @@ button {
   }
 }
 
-/* HTML Fullscreen API: status bar yok — üst inset kaldır */
-html:fullscreen .stage.home,
-html:fullscreen .stage.gate,
-:fullscreen .stage.home,
-:fullscreen .stage.gate {
-  padding-top: var(--pad-y, 0px);
-}
-
-html:fullscreen .stage.gate .theme,
-:fullscreen .stage.gate .theme {
-  top: 0.4rem;
-}
-
 .center { display: grid; place-items: center; }
 
 .chrome {
@@ -163,14 +150,6 @@ html:fullscreen .stage.gate .theme,
   min-height: var(--bar-size);
 }
 
-.summary-row {
-  display: grid;
-  grid-template-columns: var(--bar-size) minmax(0, 1fr) var(--bar-size);
-  align-items: center;
-  gap: 0.1rem;
-  min-height: 0;
-}
-
 .dock {
   display: grid;
   place-items: center;
@@ -178,30 +157,29 @@ html:fullscreen .stage.gate .theme,
   flex-shrink: 0;
 }
 
-.summary-block {
-  text-align: center;
-  padding-block: 0;
-  min-width: 0;
+.dock-signal {
+  color: var(--signal-ok);
+  filter: drop-shadow(0 0 0.45rem color-mix(in srgb, currentColor 55%, transparent));
+  transition: color 220ms ease, filter 220ms ease;
 }
 
-.summary { margin: 0; line-height: 1; }
-
-.summary-done {
-  font-size: clamp(1.1rem, 4.2vmin, 2.2rem);
-  font-weight: 650;
-  letter-spacing: -0.04em;
+.dock-signal.ok {
+  --signal-ok: #2f9e5b;
+  color: var(--signal-ok);
 }
 
-.summary-total {
-  font-size: clamp(0.75rem, 2.6vmin, 1.2rem);
-  font-weight: 560;
-  color: var(--muted);
+.dock-signal.kerahat {
+  color: #d63a3a;
+  filter: drop-shadow(0 0 0.55rem color-mix(in srgb, #d63a3a 65%, transparent));
 }
 
-.range {
-  margin: 0.08rem 0 0;
-  color: var(--muted);
-  font-size: clamp(0.62rem, 2vmin, 0.9rem);
+[data-theme="dark"] .dock-signal.ok {
+  --signal-ok: #3dcc72;
+}
+
+[data-theme="dark"] .dock-signal.kerahat {
+  color: #ff5c5c;
+  filter: drop-shadow(0 0 0.6rem color-mix(in srgb, #ff5c5c 70%, transparent));
 }
 
 .nav {
@@ -582,6 +560,11 @@ html:fullscreen .stage.gate .theme,
   outline-offset: 2px;
 }
 
+.settings-icon:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .settings-font-name {
   margin: 0.55rem 0 0;
   text-align: center;
@@ -771,6 +754,4 @@ html:fullscreen .stage.gate .theme,
     text-align: center;
     padding-left: 0;
   }
-
-  .range { display: none; }
 }
