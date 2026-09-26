@@ -381,6 +381,10 @@ button {
   visibility: visible;
 }
 
+.prayer-eta.kerahat-eta {
+  font-weight: 750;
+}
+
 .prayer-cell:has([data-prayer="sabah"]) {
   color: color-mix(in srgb, var(--sabah) 80%, var(--muted));
 }

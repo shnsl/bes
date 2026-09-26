@@ -3,7 +3,7 @@ import { DayBurst } from "./DayBurst";
 import { PrayerIcon } from "./PrayerIcon";
 import { SettingsSheet } from "./SettingsSheet";
 import { usePrayerTimes } from "../hooks/usePrayerTimes";
-import { getUpcomingPrayer, hasPrayerStarted, isKerahatNow, type DayTimes } from "../lib/prayerTimes";
+import { getKerahatEntryMinutes, getUpcomingPrayer, hasPrayerStarted, isKerahatNow, type DayTimes } from "../lib/prayerTimes";
 import {
   canGoToNextWeek,
   DAY_LABELS,
@@ -19,7 +19,9 @@ import {
   type PrayerId,
 } from "../lib/week";
 
-const HOLD_MS = 10_000;
+const HOLD_DELAY_MS = 3_000;
+const HOLD_COUNT_FROM = 7;
+const HOLD_COUNT_MS = HOLD_COUNT_FROM * 1_000;
 
 type Props = {
   weekStart: Date;
@@ -45,6 +47,7 @@ export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSig
   const holdRef = useRef<{
     key: string;
     prayer: PrayerId;
+    delay: number;
     timer: number;
     tick: number;
     opened: boolean;
@@ -69,6 +72,7 @@ export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSig
   function clearHold() {
     const active = holdRef.current;
     if (!active) return;
+    window.clearTimeout(active.delay);
     window.clearTimeout(active.timer);
     window.clearInterval(active.tick);
     holdRef.current = null;
@@ -77,22 +81,28 @@ export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSig
 
   function startUnlockHold(dateKey: string, prayer: PrayerId) {
     clearHold();
-    const started = Date.now();
-    setHoldLeft(10);
-    const tick = window.setInterval(() => {
-      const left = Math.max(1, Math.ceil((HOLD_MS - (Date.now() - started)) / 1000));
-      setHoldLeft(left);
-    }, 100);
-    const timer = window.setTimeout(() => {
+    const delay = window.setTimeout(() => {
       const active = holdRef.current;
       if (!active) return;
-      active.opened = true;
-      window.clearInterval(active.tick);
-      holdRef.current = null;
-      setHoldLeft(null);
-      onSetPrayer(dateKey, prayer, false);
-    }, HOLD_MS);
-    holdRef.current = { key: dateKey, prayer, timer, tick, opened: false };
+      const countStarted = Date.now();
+      setHoldLeft(HOLD_COUNT_FROM);
+      const tick = window.setInterval(() => {
+        const left = Math.max(1, Math.ceil((HOLD_COUNT_MS - (Date.now() - countStarted)) / 1000));
+        setHoldLeft(left);
+      }, 100);
+      const timer = window.setTimeout(() => {
+        const current = holdRef.current;
+        if (!current) return;
+        current.opened = true;
+        window.clearInterval(current.tick);
+        holdRef.current = null;
+        setHoldLeft(null);
+        onSetPrayer(dateKey, prayer, false);
+      }, HOLD_COUNT_MS);
+      active.tick = tick;
+      active.timer = timer;
+    }, HOLD_DELAY_MS);
+    holdRef.current = { key: dateKey, prayer, delay, timer: 0, tick: 0, opened: false };
   }
 
   return (
@@ -117,11 +127,19 @@ export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSig
                   const clock = showClock ? dayTimes?.[prayer] : undefined;
                   const started = hasPrayerStarted(date, prayer, dayTimes, now);
                   const blocked = !done && !started;
-                  const eta = todayRow && upcoming?.prayer === prayer ? upcoming.minutes : null;
+                  const kerahatLeft =
+                    todayRow ? getKerahatEntryMinutes(prayer, dayTimes, now) : null;
+                  const upcomingLeft =
+                    todayRow && upcoming?.prayer === prayer ? upcoming.minutes : null;
+                  const eta = kerahatLeft ?? upcomingLeft;
+                  const etaIsKerahat = kerahatLeft !== null;
                   return (
                     <div key={prayer} className="prayer-cell">
                       <div className="prayer-stack">
-                        <span className="prayer-eta" aria-hidden="true">
+                        <span
+                          className={etaIsKerahat ? "prayer-eta kerahat-eta" : "prayer-eta"}
+                          aria-hidden="true"
+                        >
                           {eta !== null ? eta : "\u00A0"}
                         </span>
                         <button
@@ -130,11 +148,13 @@ export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSig
                           data-prayer={prayer}
                           data-eta={eta !== null ? "true" : undefined}
                           aria-label={
-                            eta !== null
-                              ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock ?? ""} ${eta} dakika kaldı`
-                              : clock
-                                ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock}`
-                                : `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]}`
+                            etaIsKerahat
+                              ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock ?? ""} kerahate ${eta} dakika`
+                              : eta !== null
+                                ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock ?? ""} ${eta} dakika kaldı`
+                                : clock
+                                  ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock}`
+                                  : `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]}`
                           }
                           aria-pressed={done}
                           disabled={!ready || future || blocked}

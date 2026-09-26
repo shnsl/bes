@@ -198,6 +198,40 @@ export function isKerahatNow(times: DayTimes | undefined, now = new Date()): boo
   return false;
 }
 
+/**
+ * Sabah: güneş (sabah kerahati girişi) kalan dk
+ * İkindi: akşamdan 45 dk önceki kerahat girişi kalan dk
+ * Yalnızca ilgili vakit girdikten sonra, kerahat başlamadan önce.
+ */
+export function getKerahatEntryMinutes(
+  prayer: PrayerId,
+  times: DayTimes | undefined,
+  now = new Date(),
+): number | null {
+  if (!times) return null;
+
+  if (prayer === "sabah") {
+    if (!hasPrayerStarted(now, "sabah", times, now)) return null;
+    const gunes = clockToDate(now, times.gunes);
+    if (!gunes) return null;
+    const diffMs = gunes.getTime() - now.getTime();
+    if (diffMs <= 0) return null;
+    return Math.max(1, Math.ceil(diffMs / 60_000));
+  }
+
+  if (prayer === "ikindi") {
+    if (!hasPrayerStarted(now, "ikindi", times, now)) return null;
+    const aksam = clockToDate(now, times.aksam);
+    if (!aksam) return null;
+    const entryMs = aksam.getTime() - AKSAM_KERAHAT_MIN * 60_000;
+    const diffMs = entryMs - now.getTime();
+    if (diffMs <= 0) return null;
+    return Math.max(1, Math.ceil(diffMs / 60_000));
+  }
+
+  return null;
+}
+
 export async function fetchWeekPrayerTimes(weekStart: Date): Promise<WeekPrayerData> {
   const weekStartKey = formatDateKey(weekStart);
   const cached = readCache(weekStartKey);
