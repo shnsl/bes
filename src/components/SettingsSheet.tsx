@@ -9,8 +9,10 @@ type Props = {
   onSignOut?: () => void;
   /** Haftalık veriden gelen hicri; yoksa günlük API ile tamamlanır */
   hijriLabel?: string | null;
-  canNextWeek: boolean;
-  onShiftWeek: (weeks: number) => void;
+  onGoFirstUnmarked: () => void;
+  onGoLastMarked: () => void;
+  canGoFirstUnmarked: boolean;
+  canGoLastMarked: boolean;
 };
 
 export function SettingsSheet({
@@ -18,8 +20,10 @@ export function SettingsSheet({
   onClose,
   onSignOut,
   hijriLabel,
-  canNextWeek,
-  onShiftWeek,
+  onGoFirstUnmarked,
+  onGoLastMarked,
+  canGoFirstUnmarked,
+  canGoLastMarked,
 }: Props) {
   const { theme, toggle } = useTheme();
   const { font, cycleFont } = useFont();
@@ -55,17 +59,26 @@ export function SettingsSheet({
           <button
             type="button"
             className="settings-icon"
-            aria-label="Önceki hafta"
-            onClick={() => onShiftWeek(-1)}
+            aria-label="İlk işaretsiz haftaya git"
+            title="İlk işaretsiz"
+            disabled={!canGoFirstUnmarked}
+            onClick={() => {
+              onGoFirstUnmarked();
+              onClose();
+            }}
           >
             <ChevronIcon direction="left" />
           </button>
           <button
             type="button"
             className="settings-icon"
-            aria-label="Sonraki hafta"
-            disabled={!canNextWeek}
-            onClick={() => onShiftWeek(1)}
+            aria-label="Son işaretli haftaya git"
+            title="Son işaretli"
+            disabled={!canGoLastMarked}
+            onClick={() => {
+              onGoLastMarked();
+              onClose();
+            }}
           >
             <ChevronIcon direction="right" />
           </button>

@@ -97,3 +97,45 @@ export function normalizeDay(value: Partial<DayPrayers> | undefined): DayPrayers
   }
   return day;
 }
+
+function sortedDateKeys(days: Record<string, DayPrayers>): string[] {
+  return Object.keys(days).sort();
+}
+
+/** Bugüne kadar, işaretlenmemiş ilk namaz çemberinin hafta başı */
+export function findFirstUnmarkedWeekStart(
+  days: Record<string, DayPrayers>,
+  today = new Date(),
+): Date | null {
+  const todayKey = formatDateKey(today);
+  const startKey = sortedDateKeys(days)[0] ?? todayKey;
+  let cursor = parseDateKey(startKey);
+  const end = parseDateKey(todayKey);
+  while (cursor.getTime() <= end.getTime()) {
+    const key = formatDateKey(cursor);
+    const day = days[key] ?? emptyDay();
+    for (const prayer of PRAYERS) {
+      if (!day[prayer]) return startOfWeek(cursor);
+    }
+    cursor = addDays(cursor, 1);
+  }
+  return startOfWeek(today);
+}
+
+/** En son işaretlenmiş çemberin hafta başı */
+export function findLastMarkedWeekStart(
+  days: Record<string, DayPrayers>,
+  today = new Date(),
+): Date | null {
+  const todayKey = formatDateKey(today);
+  const keys = sortedDateKeys(days).filter((key) => key <= todayKey);
+  for (let i = keys.length - 1; i >= 0; i -= 1) {
+    const key = keys[i];
+    const day = days[key];
+    if (!day) continue;
+    for (let p = PRAYERS.length - 1; p >= 0; p -= 1) {
+      if (day[PRAYERS[p]]) return startOfWeek(parseDateKey(key));
+    }
+  }
+  return startOfWeek(today);
+}

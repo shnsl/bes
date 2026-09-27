@@ -16,11 +16,11 @@ export function PrayerIcon({ id }: Props) {
   if (id === "sabah") {
     return (
       <svg {...common}>
-        <path d="M12 3v3" />
-        <path d="M6 7.5 7.8 9" />
-        <path d="M18 7.5 16.2 9" />
-        <path d="M5 16h14" />
-        <path d="M8 16a4 4 0 0 1 8 0" />
+        <path d="M12 4.5v2.6" />
+        <path d="M6.2 8.2 7.8 9.5" />
+        <path d="M17.8 8.2 16.2 9.5" />
+        <path d="M5 15.2h14" />
+        <path d="M8.2 15.2a3.8 3.8 0 0 1 7.6 0" />
       </svg>
     );
   }
@@ -28,8 +28,8 @@ export function PrayerIcon({ id }: Props) {
   if (id === "ogle") {
     return (
       <svg {...common}>
-        <circle cx="12" cy="12" r="3.2" />
-        <path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M18 6l-1.6 1.6M7.6 16.4 6 18" />
+        <circle cx="12" cy="12" r="3.1" />
+        <path d="M12 3.8v2M12 18.2v2M3.8 12h2M18.2 12h2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8" />
       </svg>
     );
   }
@@ -37,10 +37,10 @@ export function PrayerIcon({ id }: Props) {
   if (id === "ikindi") {
     return (
       <svg {...common}>
-        <circle cx="12" cy="14" r="3.1" />
-        <path d="M12 6.2v2" />
-        <path d="M6.4 9.2 7.8 10.5" />
-        <path d="M17.6 9.2 16.2 10.5" />
+        <circle cx="12" cy="12.2" r="3.1" />
+        <path d="M12 5.2v2" />
+        <path d="M6.4 8.2 7.8 9.5" />
+        <path d="M17.6 8.2 16.2 9.5" />
       </svg>
     );
   }
@@ -48,22 +48,18 @@ export function PrayerIcon({ id }: Props) {
   if (id === "aksam") {
     return (
       <svg {...common}>
-        <path d="M3 16.5h18" />
-        <path d="M7.5 16.5a4.5 4.5 0 0 1 9 0" />
+        <path d="M4 13.6h16" />
+        <path d="M8 13.6a4 4 0 0 1 8 0" />
       </svg>
     );
   }
 
   return (
     <svg {...common}>
-      <g transform="translate(1.1 0)">
-        <path
-          d="M20.5 12.7A8.2 8.2 0 1 1 11.4 3.9 6.5 6.5 0 0 0 20.5 12.7z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.7}
-        />
-      </g>
+      <path
+        d="M15.1 5.2a6.3 6.3 0 1 0 3.9 10.5A5.1 5.1 0 0 1 15.1 5.2z"
+        strokeWidth={1.8}
+      />
     </svg>
   );
 }

@@ -60,6 +60,7 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
   });
   const [ready, setReady] = useState(() => weekHasMarks(collectSeed(uid), dateKeys));
   const [offline, setOffline] = useState(!navigator.onLine);
+  const [allDays, setAllDays] = useState<Record<string, DayPrayers>>(() => collectSeed(uid));
 
   useEffect(() => {
     mirrorRef.current = collectSeed(uid);
@@ -145,6 +146,7 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
 
       mirrorRef.current = mirrorNow;
       writeDayMirror(uid, mirrorNow);
+      setAllDays(mirrorNow);
       setDays(next);
       setReady(true);
 
@@ -211,6 +213,7 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
 
     setDays((prev) => ({ ...prev, [dateKey]: nextDay }));
     mirrorRef.current = { ...mirrorRef.current, [dateKey]: nextDay };
+    setAllDays(mirrorRef.current);
     upsertDayMirror(uid, dateKey, nextDay);
 
     try {
@@ -229,6 +232,7 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
 
   return {
     days,
+    allDays,
     doneCount: countDone(days, dateKeys),
     ready,
     offline,

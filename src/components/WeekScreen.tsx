@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type TouchEvent } from "react";
 import { DayBurst } from "./DayBurst";
 import { PrayerIcon } from "./PrayerIcon";
 import { SettingsSheet } from "./SettingsSheet";
@@ -23,6 +23,7 @@ import {
 const HOLD_DELAY_MS = 3_000;
 const HOLD_COUNT_FROM = 7;
 const HOLD_COUNT_MS = HOLD_COUNT_FROM * 1_000;
+const SWIPE_MIN_DX = 56;
 
 type Props = {
   weekStart: Date;
@@ -30,11 +31,27 @@ type Props = {
   ready: boolean;
   offline?: boolean;
   onShift: (weeks: number) => void;
+  onGoFirstUnmarked: () => void;
+  onGoLastMarked: () => void;
+  canGoFirstUnmarked: boolean;
+  canGoLastMarked: boolean;
   onSetPrayer: (dateKey: string, prayer: PrayerId, value: boolean) => void;
   onSignOut?: () => void;
 };
 
-export function WeekScreen({ weekStart, days, ready, offline = false, onShift, onSetPrayer, onSignOut }: Props) {
+export function WeekScreen({
+  weekStart,
+  days,
+  ready,
+  offline = false,
+  onShift,
+  onGoFirstUnmarked,
+  onGoLastMarked,
+  canGoFirstUnmarked,
+  canGoLastMarked,
+  onSetPrayer,
+  onSignOut,
+}: Props) {
   const today = new Date();
   const dates = weekDates(weekStart);
   const canNext = canGoToNextWeek(weekStart, today);
@@ -55,6 +72,7 @@ export function WeekScreen({ weekStart, days, ready, offline = false, onShift, o
     tick: number;
     opened: boolean;
   } | null>(null);
+  const swipeRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
 
   function markPrayer(
     dateKey: string,
@@ -108,9 +126,39 @@ export function WeekScreen({ weekStart, days, ready, offline = false, onShift, o
     holdRef.current = { key: dateKey, prayer, delay, timer: 0, tick: 0, opened: false };
   }
 
+  function onSwipeStart(event: TouchEvent) {
+    if (settingsOpen || holdLeft !== null) return;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    swipeRef.current = { x: touch.clientX, y: touch.clientY, active: true };
+  }
+
+  function onSwipeEnd(event: TouchEvent) {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start?.active || settingsOpen || holdLeft !== null) return;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_MIN_DX || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    if (dx < 0) {
+      if (canNext) onShift(1);
+    } else {
+      onShift(-1);
+    }
+  }
+
   return (
     <main className="stage home">
-      <div className="days">
+      <div
+        className="days"
+        onTouchStart={onSwipeStart}
+        onTouchEnd={onSwipeEnd}
+        onTouchCancel={() => {
+          swipeRef.current = null;
+        }}
+      >
         {dates.map((date, index) => {
           const key = formatDateKey(date);
           const future = isFutureDay(date, today);
@@ -207,8 +255,10 @@ export function WeekScreen({ weekStart, days, ready, offline = false, onShift, o
         onClose={() => setSettingsOpen(false)}
         onSignOut={onSignOut}
         hijriLabel={todayHijri}
-        canNextWeek={canNext}
-        onShiftWeek={onShift}
+        canGoFirstUnmarked={canGoFirstUnmarked}
+        canGoLastMarked={canGoLastMarked}
+        onGoFirstUnmarked={onGoFirstUnmarked}
+        onGoLastMarked={onGoLastMarked}
       />
       {holdLeft !== null ? (
         <div className="hold-overlay" aria-live="polite">

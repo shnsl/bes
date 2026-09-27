@@ -58,6 +58,7 @@ export function useLocalWeekPrayers(weekStart: Date) {
 
   return {
     days,
+    allDays: store,
     doneCount: countDone(days, dateKeys),
     ready: true,
     setPrayer,

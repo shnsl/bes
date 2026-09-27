@@ -281,6 +281,7 @@ button {
   min-height: 0;
   height: 100%;
   overflow: hidden;
+  touch-action: pan-y;
 }
 
 .day {
@@ -422,7 +423,11 @@ button {
 .prayer svg {
   width: 52%;
   height: 52%;
+  display: block;
+  margin: auto;
+  overflow: visible;
   animation: icon-drift 4.8s ease-in-out infinite;
+  transform-origin: center center;
 }
 
 .prayer[data-prayer="sabah"] svg { animation-delay: 0s; }
@@ -631,8 +636,8 @@ button {
 }
 
 @keyframes icon-drift {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0.92; }
-  50% { transform: translateY(-6%) scale(1.04); opacity: 1; }
+  0%, 100% { transform: scale(1); opacity: 0.92; }
+  50% { transform: scale(1.05); opacity: 1; }
 }
 
 @keyframes icon-glow {
