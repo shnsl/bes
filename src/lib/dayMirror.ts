@@ -1,6 +1,7 @@
 import { emptyDay, normalizeDay, PRAYERS, type DayPrayers, type PrayerId } from "./week";
 
 const MIRROR_PREFIX = "bes-days-mirror";
+const LEGACY_KEY = "bes-days";
 
 function mirrorKey(uid: string): string {
   return `${MIRROR_PREFIX}:${uid}`;
@@ -35,12 +36,30 @@ export function upsertDayMirror(uid: string, dateKey: string, day: DayPrayers) {
   writeDayMirror(uid, store);
 }
 
-/** Uzak belge yoksa yerel aynayı koru; varsa (pending hariç) uzak kaynağı kullan. */
+/** Eski localStorage anahtarını (bes-days) okuyup aynaya kat. */
+export function readLegacyDays(): Record<string, DayPrayers> {
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, Partial<DayPrayers>>;
+    const store: Record<string, DayPrayers> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      store[key] = normalizeDay(value);
+    }
+    return store;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * İşaretler yapışkan: true olan taraf kazanır (pending hariç).
+ * Böylece web önbelleğindeki işaretler localhost/sunucu birleşiminde kaybolmaz.
+ */
 export function mergeDayPrayers(
   remote: DayPrayers | undefined,
   local: DayPrayers | undefined,
   pending: Partial<Record<PrayerId, boolean>> | undefined,
-  remotePresent: boolean,
 ): DayPrayers {
   const next = emptyDay();
   for (const prayer of PRAYERS) {
@@ -48,11 +67,12 @@ export function mergeDayPrayers(
       next[prayer] = Boolean(pending[prayer]);
       continue;
     }
-    if (remotePresent && remote) {
-      next[prayer] = remote[prayer] === true;
-      continue;
-    }
-    next[prayer] = local?.[prayer] === true;
+    next[prayer] = remote?.[prayer] === true || local?.[prayer] === true;
   }
   return next;
+}
+
+export function dayHasMark(day: DayPrayers | undefined): boolean {
+  if (!day) return false;
+  return PRAYERS.some((prayer) => day[prayer] === true);
 }

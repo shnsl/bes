@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { onAuthStateChanged, signInWithEmailAndPassword, type User } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  onAuthStateChanged,
+  setPersistence,
+  signInWithEmailAndPassword,
+  type User,
+} from "firebase/auth";
 import { PIN_ACCOUNT_EMAIL, getFirebase } from "../firebase";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -11,7 +17,23 @@ export function AuthGate({ children }: Props) {
 
   useEffect(() => {
     if (!firebase) return;
-    return onAuthStateChanged(firebase.auth, setUser);
+    let active = true;
+    let unsubscribe = () => {};
+
+    void (async () => {
+      try {
+        await setPersistence(firebase.auth, browserLocalPersistence);
+      } catch {
+        /* varsayılan kalıcılık */
+      }
+      if (!active) return;
+      unsubscribe = onAuthStateChanged(firebase.auth, setUser);
+    })();
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [firebase]);
 
   if (!firebase || user === undefined) return <main className="stage" />;

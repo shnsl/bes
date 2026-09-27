@@ -1,6 +1,7 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import {
+  getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
@@ -34,14 +35,20 @@ export function getFirebase(): FirebaseServices | null {
   if (!isFirebaseConfigured()) return null;
   if (!services) {
     const app = initializeApp(firebaseConfig);
-    services = {
-      app,
-      auth: getAuth(app),
-      db: initializeFirestore(app, {
+    let db: Firestore;
+    try {
+      db = initializeFirestore(app, {
         localCache: persistentLocalCache({
           tabManager: persistentMultipleTabManager(),
         }),
-      }),
+      });
+    } catch {
+      db = getFirestore(app);
+    }
+    services = {
+      app,
+      auth: getAuth(app),
+      db,
     };
   }
   return services;
