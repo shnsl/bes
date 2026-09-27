@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { DayBurst } from "./DayBurst";
 import { PrayerIcon } from "./PrayerIcon";
 import { SettingsSheet } from "./SettingsSheet";
+import { useConnectionStatus } from "../hooks/useConnectionStatus";
 import { usePrayerTimes } from "../hooks/usePrayerTimes";
 import { getKerahatEntryMinutes, getUpcomingPrayer, hasPrayerStarted, isKerahatNow, type DayTimes } from "../lib/prayerTimes";
 import {
@@ -27,20 +28,22 @@ type Props = {
   weekStart: Date;
   days: Record<string, DayPrayers>;
   ready: boolean;
+  offline?: boolean;
   onShift: (weeks: number) => void;
   onSetPrayer: (dateKey: string, prayer: PrayerId, value: boolean) => void;
   onSignOut?: () => void;
 };
 
-export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSignOut }: Props) {
+export function WeekScreen({ weekStart, days, ready, offline = false, onShift, onSetPrayer, onSignOut }: Props) {
   const today = new Date();
   const dates = weekDates(weekStart);
   const canNext = canGoToNextWeek(weekStart, today);
   const { times: prayerTimes, todayHijri } = usePrayerTimes(weekStart);
   const now = useNow(30_000);
   const todayKey = formatDateKey(now);
-  const upcoming = getUpcomingPrayer(prayerTimes[todayKey], now);
+  const upcoming = getUpcomingPrayer(prayerTimes, now);
   const kerahat = isKerahatNow(prayerTimes[todayKey], now);
+  const netDown = useConnectionStatus(offline);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [burstToken, setBurstToken] = useState(0);
   const [holdLeft, setHoldLeft] = useState<number | null>(null);
@@ -130,7 +133,7 @@ export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSig
                   const kerahatLeft =
                     todayRow ? getKerahatEntryMinutes(prayer, dayTimes, now) : null;
                   const upcomingLeft =
-                    todayRow && upcoming?.prayer === prayer ? upcoming.minutes : null;
+                    upcoming?.dateKey === key && upcoming.prayer === prayer ? upcoming.minutes : null;
                   const eta = kerahatLeft ?? upcomingLeft;
                   const etaIsKerahat = kerahatLeft !== null;
                   return (
@@ -186,6 +189,11 @@ export function WeekScreen({ weekStart, days, ready, onShift, onSetPrayer, onSig
         })}
       </div>
       <footer className="dock">
+        {netDown ? (
+          <p className="net-banner" role="status">
+            İnternet bağlantınız yavaş veya kapalı. İşaretleriniz cihazda saklanıyor.
+          </p>
+        ) : null}
         <button
           type="button"
           className={kerahat ? "nav dock-signal kerahat" : "nav dock-signal ok"}

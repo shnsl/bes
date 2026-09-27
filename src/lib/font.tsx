@@ -35,7 +35,7 @@ function fontUrl(file: string): string {
   return `${root}fonts/${file}`;
 }
 
-function ensureFontFaces() {
+function ensureFontFaces(preferredId: AppFontId = DEFAULT_FONT_ID) {
   let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
   if (!style) {
     style = document.createElement("style");
@@ -47,7 +47,8 @@ function ensureFontFaces() {
     .map((font) => {
       const family = font.label.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       const url = fontUrl(font.file!).replace(/'/g, "\\'");
-      return `@font-face{font-family:'${family}';src:url('${url}') format('${font.format}');font-weight:100 900;font-style:normal;font-display:swap;}`;
+      const display = font.id === preferredId ? "block" : "optional";
+      return `@font-face{font-family:'${family}';src:url('${url}') format('${font.format}');font-weight:100 900;font-style:normal;font-display:${display};}`;
     })
     .join("\n");
 }
@@ -67,14 +68,14 @@ function readStoredFont(): AppFontId {
 export function FontProvider({ children }: { children: ReactNode }) {
   const [fontId, setFontIdState] = useState<AppFontId>(() => {
     if (typeof window === "undefined") return DEFAULT_FONT_ID;
-    ensureFontFaces();
     const initial = readStoredFont();
+    ensureFontFaces(initial);
     applyFont(initial);
     return initial;
   });
 
   useEffect(() => {
-    ensureFontFaces();
+    ensureFontFaces(fontId);
     applyFont(fontId);
     localStorage.setItem(STORAGE_KEY, fontId);
   }, [fontId]);

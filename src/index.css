@@ -153,8 +153,22 @@ button {
 .dock {
   display: grid;
   place-items: center;
+  gap: 0.35rem;
   min-height: var(--bar-size);
   flex-shrink: 0;
+}
+
+.net-banner {
+  margin: 0;
+  max-width: 22rem;
+  text-align: center;
+  font-size: clamp(0.68rem, 2.2vmin, 0.82rem);
+  font-weight: 600;
+  line-height: 1.25;
+  color: color-mix(in srgb, #c45c1a 80%, var(--ink));
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #c45c1a 14%, var(--bg));
 }
 
 .dock-signal {
@@ -281,14 +295,15 @@ button {
 }
 
 .day {
+  --day-label-h: 1.05em;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: var(--day-label-h) minmax(0, 1fr);
   align-items: stretch;
-  gap: 0.12rem;
+  gap: 0.1rem;
   min-height: 0;
   height: 100%;
-  padding: clamp(0.12rem, 0.6vh, 0.35rem) clamp(0.18rem, 1vw, 0.55rem);
+  padding: 0 clamp(0.18rem, 1vw, 0.55rem);
   border-radius: clamp(0.75rem, 2vmin, 1.2rem);
   overflow: visible;
 }
@@ -299,6 +314,9 @@ button {
 
 .day-label {
   margin: 0;
+  height: var(--day-label-h);
+  display: flex;
+  align-items: center;
   text-align: left;
   padding-left: 0.12rem;
   font-size: var(--clock-size);
@@ -333,8 +351,8 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.28rem;
+  justify-content: center;
+  gap: 0.22rem;
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -689,7 +707,7 @@ button {
     --day-gap: 0.16rem;
   }
 
-  .day { gap: 0.06rem; padding-block: 0.08rem; }
+  .day { gap: 0.06rem; padding-block: 0; }
 }
 
 /* Geniş telefon / küçük tablet: yan etiket */
@@ -699,6 +717,7 @@ button {
   }
 
   .day {
+    --day-label-h: auto;
     grid-template-columns: clamp(2.2rem, 5vw, 3rem) minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     align-items: center;
@@ -706,8 +725,10 @@ button {
   }
 
   .day-label {
+    height: auto;
     text-align: center;
     padding-left: 0;
+    justify-content: center;
   }
 }
 
@@ -748,14 +769,17 @@ button {
   }
 
   .day {
+    --day-label-h: auto;
     grid-template-columns: 1.8rem minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     gap: 0.25rem;
-    padding-block: 0.05rem;
+    padding-block: 0;
   }
 
   .day-label {
+    height: auto;
     text-align: center;
     padding-left: 0;
+    justify-content: center;
   }
 }

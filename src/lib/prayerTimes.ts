@@ -6,7 +6,7 @@ export const SAHINBEY_DISTRICT_ID = "9479";
 export const PRAYER_TIMES_LABEL = "Gaziantep · Şahinbey";
 
 const API_BASE = "https://ezanvakti.imsakiyem.com/api/prayer-times";
-const CACHE_PREFIX = "bes-vakit-9479-v2";
+const CACHE_PREFIX = "bes-vakit-9479-v3";
 
 export type DayTimes = Record<PrayerId, string> & {
   /** Güneş doğuşu (kerahat için) */
@@ -21,6 +21,7 @@ export type WeekPrayerData = {
 export type UpcomingPrayer = {
   prayer: PrayerId;
   minutes: number;
+  dateKey: string;
 };
 
 const HIJRI_MONTHS = [
@@ -42,7 +43,9 @@ const HIJRI_MONTHS = [
 type ApiDay = {
   date: string;
   times: {
+    /** Diyanet: sabah namazı girişi (bazı kaynaklarda sabah diye geçer) */
     imsak: string;
+    sabah?: string;
     gunes: string;
     ogle: string;
     ikindi: string;
@@ -70,8 +73,10 @@ function normalizeClock(value: string): string {
 }
 
 function toDayTimes(times: ApiDay["times"]): DayTimes {
+  // Sabah ezanı / vakit girişi: API'de sabah varsa onu, yoksa Diyanet imsak (=sabah girişi)
+  const sabahClock = times.sabah?.trim() ? times.sabah : times.imsak;
   return {
-    sabah: normalizeClock(times.imsak),
+    sabah: normalizeClock(sabahClock),
     gunes: normalizeClock(times.gunes),
     ogle: normalizeClock(times.ogle),
     ikindi: normalizeClock(times.ikindi),
@@ -151,19 +156,55 @@ export function hasPrayerStarted(
   return now.getTime() >= at.getTime();
 }
 
-/** Bugünün henüz gelmemiş ilk vakti ve kalan dakika */
-export function getUpcomingPrayer(times: DayTimes | undefined, now = new Date()): UpcomingPrayer | null {
-  if (!times) return null;
+/** Bugünün henüz gelmemiş ilk vakti; yatsı geçtiyse yarının sabahı */
+export function getUpcomingPrayer(
+  timesByDate: Record<string, DayTimes>,
+  now = new Date(),
+): UpcomingPrayer | null {
   const nowMs = now.getTime();
-  for (const prayer of PRAYERS) {
-    const at = clockToDate(now, times[prayer]);
-    if (!at) continue;
-    const diffMs = at.getTime() - nowMs;
-    if (diffMs > 0) {
-      return { prayer, minutes: Math.max(1, Math.ceil(diffMs / 60_000)) };
+  const todayKey = formatDateKey(now);
+  const todayTimes = timesByDate[todayKey];
+
+  if (todayTimes) {
+    for (const prayer of PRAYERS) {
+      const at = clockToDate(now, todayTimes[prayer]);
+      if (!at) continue;
+      const diffMs = at.getTime() - nowMs;
+      if (diffMs > 0) {
+        return { prayer, minutes: Math.max(1, Math.ceil(diffMs / 60_000)), dateKey: todayKey };
+      }
     }
   }
-  return null;
+
+  const tomorrow = addDays(now, 1);
+  const tomorrowKey = formatDateKey(tomorrow);
+  const tomorrowTimes = timesByDate[tomorrowKey];
+  const sabah = tomorrowTimes?.sabah;
+  if (!sabah) return null;
+  const at = clockToDate(tomorrow, sabah);
+  if (!at) return null;
+  const diffMs = at.getTime() - nowMs;
+  if (diffMs <= 0) return null;
+  return { prayer: "sabah", minutes: Math.max(1, Math.ceil(diffMs / 60_000)), dateKey: tomorrowKey };
+}
+
+export async function fetchDayPrayerTimes(date: Date): Promise<WeekPrayerData | null> {
+  const dayKey = formatDateKey(date);
+  const url = `${API_BASE}/${SAHINBEY_DISTRICT_ID}/daily?startDate=${dayKey}`;
+  try {
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`vakit ${response.status}`);
+    const payload = (await response.json()) as ApiResponse;
+    const day = payload.data?.find((item) => dateKeyFromApi(item.date) === dayKey) ?? payload.data?.[0];
+    if (!day) return null;
+    const times: Record<string, DayTimes> = { [dayKey]: toDayTimes(day.times) };
+    const hijri: Record<string, string> = {};
+    const label = formatHijriLabel(day.hijri_date);
+    if (label) hijri[dayKey] = label;
+    return { times, hijri };
+  } catch {
+    return null;
+  }
 }
 
 const OGLE_KERAHAT_MIN = 20;

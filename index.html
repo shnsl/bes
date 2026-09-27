@@ -6,11 +6,65 @@
     <meta name="theme-color" content="#101835" />
     <script>
       (function () {
-        var saved = localStorage.getItem("bes-theme");
-        var theme = saved === "light" || saved === "dark" ? saved : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        var BASE = "%BASE_URL%";
+        if (!BASE.endsWith("/")) BASE += "/";
+
+        var savedTheme = localStorage.getItem("bes-theme");
+        var theme =
+          savedTheme === "light" || savedTheme === "dark"
+            ? savedTheme
+            : matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
         document.documentElement.dataset.theme = theme;
         var meta = document.querySelector('meta[name="theme-color"]');
         if (meta) meta.setAttribute("content", theme === "dark" ? "#101835" : "#eef2f8");
+
+        var FONTS = {
+          inter: { family: "Inter", file: "Inter-Regular.otf", format: "opentype" },
+          sf: { family: "San Francisco", file: "SF-Pro-Display-Regular.otf", format: "opentype" },
+          montserrat: { family: "Montserrat", file: "Montserrat-Regular.ttf", format: "truetype" },
+          lato: { family: "Lato", file: "Lato-Regular.ttf", format: "truetype" },
+          raleway: { family: "Raleway", file: "Raleway-Regular.ttf", format: "truetype" },
+          rubik: { family: "Rubik", file: "Rubik-Regular.ttf", format: "truetype" },
+          karla: { family: "Karla", file: "Karla-Regular.ttf", format: "truetype" },
+          mulish: { family: "Mulish", file: "Mulish-Regular.ttf", format: "truetype" },
+          lexend: { family: "Lexend", file: "Lexend-Regular.ttf", format: "truetype" },
+          figtree: { family: "Figtree", file: "Figtree-Regular.ttf", format: "truetype" },
+          "dm-sans": { family: "DM Sans", file: "DMSans-Regular.ttf", format: "truetype" },
+          saira: { family: "Saira", file: "Saira-Regular.ttf", format: "truetype" },
+        };
+        var fontId = localStorage.getItem("bes-font");
+        var font = FONTS[fontId] || FONTS.inter;
+        if (!FONTS[fontId]) fontId = "inter";
+        var url = BASE + "fonts/" + font.file;
+        var family = font.family.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        var style = document.createElement("style");
+        style.id = "bes-boot-font";
+        style.textContent =
+          "@font-face{font-family:'" +
+          family +
+          "';src:url('" +
+          url.replace(/'/g, "\\'") +
+          "') format('" +
+          font.format +
+          "');font-weight:100 900;font-style:normal;font-display:block;}" +
+          "html{--app-font:'" +
+          family +
+          "', system-ui, sans-serif;}";
+        document.head.appendChild(style);
+        document.documentElement.setAttribute("data-font", fontId);
+        document.documentElement.style.setProperty(
+          "--app-font",
+          '"' + font.family + '", system-ui, sans-serif',
+        );
+        var link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "font";
+        link.href = url;
+        link.type = font.format === "opentype" ? "font/otf" : "font/ttf";
+        link.crossOrigin = "anonymous";
+        document.head.appendChild(link);
       })();
     </script>
     <meta name="robots" content="noindex" />

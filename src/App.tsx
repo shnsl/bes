@@ -49,6 +49,7 @@ function CloudWeek({
       weekStart={weekStart}
       days={state.days}
       ready={state.ready}
+      offline={state.offline}
       onShift={onShift}
       onSetPrayer={state.setPrayer}
       onSignOut={firebase ? () => signOut(firebase.auth) : undefined}

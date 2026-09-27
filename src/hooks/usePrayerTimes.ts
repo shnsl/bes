@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchWeekPrayerTimes, type DayTimes } from "../lib/prayerTimes";
-import { formatDateKey } from "../lib/week";
+import { fetchDayPrayerTimes, fetchWeekPrayerTimes, type DayTimes } from "../lib/prayerTimes";
+import { addDays, formatDateKey } from "../lib/week";
 
 export function usePrayerTimes(weekStart: Date) {
   const weekTime = weekStart.getTime();
@@ -12,19 +12,33 @@ export function usePrayerTimes(weekStart: Date) {
     let active = true;
     setReady(false);
 
-    fetchWeekPrayerTimes(new Date(weekTime))
-      .then((next) => {
+    (async () => {
+      try {
+        const week = await fetchWeekPrayerTimes(new Date(weekTime));
         if (!active) return;
-        setTimes(next.times);
-        setHijri(next.hijri);
-        setReady(true);
-      })
-      .catch(() => {
+
+        let nextTimes = { ...week.times };
+        let nextHijri = { ...week.hijri };
+
+        const tomorrowKey = formatDateKey(addDays(new Date(), 1));
+        if (!nextTimes[tomorrowKey]) {
+          const extra = await fetchDayPrayerTimes(addDays(new Date(), 1));
+          if (extra && active) {
+            nextTimes = { ...nextTimes, ...extra.times };
+            nextHijri = { ...nextHijri, ...extra.hijri };
+          }
+        }
+
         if (!active) return;
-        setTimes({});
-        setHijri({});
+        setTimes(nextTimes);
+        setHijri(nextHijri);
         setReady(true);
-      });
+      } catch {
+        if (!active) return;
+        // Haftalık önbellek yoksa bile boş bırakma — önceki state kalsın
+        setReady(true);
+      }
+    })();
 
     return () => {
       active = false;
