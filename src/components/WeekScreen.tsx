@@ -110,9 +110,6 @@ export function WeekScreen({ weekStart, days, ready, offline = false, onShift, o
 
   return (
     <main className="stage home">
-      <header className="chrome">
-        <div className="topbar" aria-hidden="true" />
-      </header>
       <div className="days">
         {dates.map((date, index) => {
           const key = formatDateKey(date);

@@ -79,10 +79,10 @@ button {
   width: min(100%, 72rem);
   margin-inline: auto;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: clamp(0.1rem, 0.6vh, 0.45rem);
   overflow: hidden;
-  padding-top: var(--pad-y);
+  padding-top: 0;
   padding-right: calc(var(--pad-x) + env(safe-area-inset-right, 0px));
   padding-bottom: calc(var(--pad-y) + env(safe-area-inset-bottom, 0px));
   padding-left: calc(var(--pad-x) + env(safe-area-inset-left, 0px));
@@ -110,7 +110,7 @@ button {
 /* Tarayıcı sekmesinde çentik/status bar için üst boşluk kalsın */
 @media (display-mode: browser) {
   .stage.home {
-    padding-top: calc(var(--pad-y) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   .stage.gate {
@@ -125,7 +125,7 @@ button {
 /* Yüklü PWA (standalone): tema rengi status bar; içerik çentik altına girmez */
 @media (display-mode: standalone), (display-mode: minimal-ui) {
   .stage.home {
-    padding-top: calc(var(--pad-y) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   .stage.gate {
@@ -138,17 +138,6 @@ button {
 }
 
 .center { display: grid; place-items: center; }
-
-.chrome {
-  display: grid;
-  gap: 0.05rem;
-  min-height: 0;
-  flex-shrink: 0;
-}
-
-.topbar {
-  min-height: var(--bar-size);
-}
 
 .dock {
   display: grid;
