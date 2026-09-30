@@ -10,11 +10,14 @@ import {
 } from "firebase/firestore";
 import { getFirebase } from "../firebase";
 import {
+  collectLocalSeed,
   dayHasMark,
   mergeDayPrayers,
-  readDayMirror,
-  readLegacyDays,
+  readOutbox,
+  rememberUid,
+  removeOutboxDay,
   upsertDayMirror,
+  upsertOutbox,
   writeDayMirror,
 } from "../lib/dayMirror";
 import {
@@ -36,34 +39,49 @@ function weekHasMarks(store: Record<string, DayPrayers>, keys: string[]): boolea
   return keys.some((key) => dayHasMark(store[key]));
 }
 
-function collectSeed(uid: string): Record<string, DayPrayers> {
-  const mirror = readDayMirror(uid);
-  const legacy = readLegacyDays();
-  const seed: Record<string, DayPrayers> = { ...legacy };
-  for (const [key, day] of Object.entries(mirror)) {
-    seed[key] = mergeDayPrayers(day, seed[key], undefined);
+async function writeDayWithRetry(
+  uid: string,
+  dateKey: string,
+  day: DayPrayers,
+  attempts = 4,
+): Promise<boolean> {
+  const firebase = getFirebase();
+  if (!firebase) return false;
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      await setDoc(doc(firebase.db, "users", uid, "days", dateKey), day, { merge: true });
+      removeOutboxDay(uid, dateKey);
+      upsertDayMirror(uid, dateKey, day);
+      return true;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => window.setTimeout(resolve, 400 * (i + 1) * (i + 1)));
+    }
   }
-  return seed;
+  console.error("bes writeDayWithRetry", dateKey, lastError);
+  return false;
 }
 
 export function useWeekPrayers(uid: string, weekStart: Date) {
   const weekTime = weekStart.getTime();
   const dateKeys = useMemo(() => weekDates(new Date(weekTime)).map(formatDateKey), [weekTime]);
-  const mirrorRef = useRef<Record<string, DayPrayers>>(collectSeed(uid));
+  const mirrorRef = useRef<Record<string, DayPrayers>>(collectLocalSeed(uid));
   const pendingRef = useRef<PendingMap>({});
   const syncingRef = useRef(new Set<string>());
   const [days, setDays] = useState<Record<string, DayPrayers>>(() => {
-    const seed = collectSeed(uid);
+    const seed = collectLocalSeed(uid);
     const next: Record<string, DayPrayers> = {};
     for (const key of dateKeys) next[key] = seed[key] ?? emptyDay();
     return next;
   });
-  const [ready, setReady] = useState(() => weekHasMarks(collectSeed(uid), dateKeys));
+  const [ready, setReady] = useState(() => weekHasMarks(collectLocalSeed(uid), dateKeys));
   const [offline, setOffline] = useState(!navigator.onLine);
-  const [allDays, setAllDays] = useState<Record<string, DayPrayers>>(() => collectSeed(uid));
+  const [allDays, setAllDays] = useState<Record<string, DayPrayers>>(() => collectLocalSeed(uid));
 
   useEffect(() => {
-    mirrorRef.current = collectSeed(uid);
+    rememberUid(uid);
+    mirrorRef.current = collectLocalSeed(uid);
   }, [uid]);
 
   useEffect(() => {
@@ -82,8 +100,9 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
     if (!firebase) return;
     let active = true;
 
-    const seed = collectSeed(uid);
+    const seed = collectLocalSeed(uid);
     mirrorRef.current = seed;
+    setAllDays(seed);
     setDays(() => {
       const next: Record<string, DayPrayers> = {};
       for (const key of dateKeys) next[key] = seed[key] ?? emptyDay();
@@ -92,6 +111,17 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
     if (!weekHasMarks(seed, dateKeys)) setReady(false);
 
     const daysCol = collection(firebase.db, "users", uid, "days");
+
+    async function flushOutbox() {
+      const box = readOutbox(uid);
+      for (const [dateKey, day] of Object.entries(box)) {
+        if (syncingRef.current.has(dateKey)) continue;
+        syncingRef.current.add(dateKey);
+        const ok = await writeDayWithRetry(uid, dateKey, day);
+        syncingRef.current.delete(dateKey);
+        if (!ok && active) setOffline(true);
+      }
+    }
 
     async function pushMissingToServer(
       remoteAll: Record<string, DayPrayers>,
@@ -106,14 +136,10 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
         if (!needsPush) continue;
         if (syncingRef.current.has(dateKey)) continue;
         syncingRef.current.add(dateKey);
-        try {
-          await setDoc(doc(firebase!.db, "users", uid, "days", dateKey), day, { merge: true });
-        } catch (error) {
-          console.error("bes sync-up", dateKey, error);
-          if (active) setOffline(true);
-        } finally {
-          syncingRef.current.delete(dateKey);
-        }
+        upsertOutbox(uid, dateKey, day);
+        const ok = await writeDayWithRetry(uid, dateKey, day);
+        syncingRef.current.delete(dateKey);
+        if (!ok && active) setOffline(true);
       }
     }
 
@@ -132,14 +158,23 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
         remoteAll[item.id] = normalizeDay(item.data());
       });
 
+      const outbox = readOutbox(uid);
       const mirrorNow = { ...mirrorRef.current };
+
       for (const [key, remoteDay] of Object.entries(remoteAll)) {
         mirrorNow[key] = mergeDayPrayers(remoteDay, mirrorNow[key], pendingRef.current[key]);
       }
 
+      // Outbox: henüz sunucuya gitmemiş son niyet
+      for (const [key, day] of Object.entries(outbox)) {
+        mirrorNow[key] = normalizeDay(day);
+      }
+
       const next: Record<string, DayPrayers> = {};
       for (const key of dateKeys) {
-        const merged = mergeDayPrayers(remoteAll[key], mirrorNow[key], pendingRef.current[key]);
+        const merged = outbox[key]
+          ? normalizeDay(outbox[key])
+          : mergeDayPrayers(remoteAll[key], mirrorNow[key], pendingRef.current[key]);
         next[key] = merged;
         mirrorNow[key] = merged;
       }
@@ -150,8 +185,7 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
       setDays(next);
       setReady(true);
 
-      // Web önbelleğinde olup sunucuda eksik olan işaretleri yukarı yaz
-      void pushMissingToServer(remoteAll, mirrorNow);
+      void flushOutbox().then(() => pushMissingToServer(remoteAll, mirrorNow));
     }
 
     const unsubscribe = onSnapshot(
@@ -167,7 +201,8 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
     );
 
     const pullServer = () => {
-      void waitForPendingWrites(firebase.db)
+      void flushOutbox()
+        .then(() => waitForPendingWrites(firebase.db))
         .catch(() => undefined)
         .finally(() => {
           if (!active) return;
@@ -182,19 +217,25 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
         });
     };
 
-    pullServer();
+    void flushOutbox().finally(() => {
+      if (active) pullServer();
+    });
 
     const onVisible = () => {
-      if (document.visibilityState === "visible") pullServer();
+      if (document.visibilityState === "visible") {
+        void flushOutbox().finally(pullServer);
+      }
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", pullServer);
+    window.addEventListener("online", pullServer);
 
     return () => {
       active = false;
       unsubscribe();
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", pullServer);
+      window.removeEventListener("online", pullServer);
     };
   }, [uid, dateKeys]);
 
@@ -211,23 +252,20 @@ export function useWeekPrayers(uid: string, weekStart: Date) {
       [prayer]: value,
     };
 
-    setDays((prev) => ({ ...prev, [dateKey]: nextDay }));
+    // Önce yerel kalıcılık — oturum düşse bile kaybolmasın
     mirrorRef.current = { ...mirrorRef.current, [dateKey]: nextDay };
-    setAllDays(mirrorRef.current);
     upsertDayMirror(uid, dateKey, nextDay);
+    upsertOutbox(uid, dateKey, nextDay);
+    setDays((prev) => ({ ...prev, [dateKey]: nextDay }));
+    setAllDays(mirrorRef.current);
 
-    try {
-      await setDoc(doc(firebase.db, "users", uid, "days", dateKey), nextDay, { merge: true });
-      const pending = pendingRef.current[dateKey];
-      if (pending) {
-        delete pending[prayer];
-        if (Object.keys(pending).length === 0) delete pendingRef.current[dateKey];
-      }
-      upsertDayMirror(uid, dateKey, nextDay);
-    } catch (error) {
-      console.error("bes setPrayer", error);
-      setOffline(true);
+    const ok = await writeDayWithRetry(uid, dateKey, nextDay);
+    const pending = pendingRef.current[dateKey];
+    if (pending) {
+      delete pending[prayer];
+      if (Object.keys(pending).length === 0) delete pendingRef.current[dateKey];
     }
+    if (!ok) setOffline(true);
   }
 
   return {

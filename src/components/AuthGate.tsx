@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import {
-  browserLocalPersistence,
-  onAuthStateChanged,
-  setPersistence,
-  signInWithEmailAndPassword,
-  type User,
-} from "firebase/auth";
+import { onAuthStateChanged, onIdTokenChanged, signInWithEmailAndPassword, type User } from "firebase/auth";
 import { PIN_ACCOUNT_EMAIL, getFirebase } from "../firebase";
+import { rememberUid } from "../lib/dayMirror";
 import { ThemeToggle } from "./ThemeToggle";
 
 type Props = { children: (user: User) => ReactNode };
@@ -14,25 +9,44 @@ type Props = { children: (user: User) => ReactNode };
 export function AuthGate({ children }: Props) {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const firebase = getFirebase();
+  const userRef = useRef<User | null>(null);
 
   useEffect(() => {
     if (!firebase) return;
-    let active = true;
-    let unsubscribe = () => {};
 
-    void (async () => {
-      try {
-        await setPersistence(firebase.auth, browserLocalPersistence);
-      } catch {
-        /* varsayılan kalıcılık */
-      }
-      if (!active) return;
-      unsubscribe = onAuthStateChanged(firebase.auth, setUser);
-    })();
+    const unsubAuth = onAuthStateChanged(firebase.auth, (next) => {
+      userRef.current = next;
+      if (next) rememberUid(next.uid);
+      setUser(next);
+    });
+
+    // Token yenilemesini canlı tut — sessizce düşmeyi azaltır
+    const unsubToken = onIdTokenChanged(firebase.auth, (next) => {
+      if (next) userRef.current = next;
+    });
+
+    const refreshToken = () => {
+      const current = firebase.auth.currentUser ?? userRef.current;
+      if (!current) return;
+      void current.getIdToken(true).catch(() => {
+        /* ağ yoksa mevcut oturum kalsın */
+      });
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshToken();
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", refreshToken);
+    const interval = window.setInterval(refreshToken, 20 * 60_000);
 
     return () => {
-      active = false;
-      unsubscribe();
+      unsubAuth();
+      unsubToken();
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", refreshToken);
+      window.clearInterval(interval);
     };
   }, [firebase]);
 
@@ -53,7 +67,8 @@ function PinScreen() {
     setBusy(true);
     setBad(false);
     try {
-      await signInWithEmailAndPassword(firebase.auth, PIN_ACCOUNT_EMAIL, nextPin);
+      const cred = await signInWithEmailAndPassword(firebase.auth, PIN_ACCOUNT_EMAIL, nextPin);
+      rememberUid(cred.user.uid);
     } catch {
       setPin("");
       setBad(true);

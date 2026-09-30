@@ -1,5 +1,11 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  getAuth,
+  indexedDBLocalPersistence,
+  initializeAuth,
+  type Auth,
+} from "firebase/auth";
 import {
   getFirestore,
   initializeFirestore,
@@ -31,10 +37,22 @@ type FirebaseServices = {
 
 let services: FirebaseServices | null = null;
 
+function createAuth(app: FirebaseApp): Auth {
+  try {
+    // Mobil PWA'da localStorage silinebiliyor; IndexedDB daha kalıcı
+    return initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+    });
+  } catch {
+    return getAuth(app);
+  }
+}
+
 export function getFirebase(): FirebaseServices | null {
   if (!isFirebaseConfigured()) return null;
   if (!services) {
     const app = initializeApp(firebaseConfig);
+    const auth = createAuth(app);
     let db: Firestore;
     try {
       db = initializeFirestore(app, {
@@ -45,11 +63,7 @@ export function getFirebase(): FirebaseServices | null {
     } catch {
       db = getFirestore(app);
     }
-    services = {
-      app,
-      auth: getAuth(app),
-      db,
-    };
+    services = { app, auth, db };
   }
   return services;
 }
