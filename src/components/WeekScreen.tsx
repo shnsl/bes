@@ -82,6 +82,7 @@ export function WeekScreen({
     dayTimes: DayTimes | undefined,
   ) {
     if (day?.[prayer]) return;
+    if (kerahat) return;
     if (!hasPrayerStarted(date, prayer, dayTimes, now)) return;
     const next = { ...emptyDay(), ...day, [prayer]: true };
     onSetPrayer(dateKey, prayer, true);
@@ -174,7 +175,7 @@ export function WeekScreen({
                   const showClock = todayRow || future;
                   const clock = showClock ? dayTimes?.[prayer] : undefined;
                   const started = hasPrayerStarted(date, prayer, dayTimes, now);
-                  const blocked = !done && !started;
+                  const blocked = !done && (!started || kerahat);
                   const kerahatLeft =
                     todayRow ? getKerahatEntryMinutes(prayer, dayTimes, now) : null;
                   const upcomingLeft =
@@ -196,13 +197,15 @@ export function WeekScreen({
                           data-prayer={prayer}
                           data-eta={eta !== null ? "true" : undefined}
                           aria-label={
-                            etaIsKerahat
-                              ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock ?? ""} kerahate ${eta} dakika`
-                              : eta !== null
-                                ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock ?? ""} ${eta} dakika kaldı`
-                                : clock
-                                  ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock}`
-                                  : `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]}`
+                            kerahat && !done
+                              ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} kerahat vakti`
+                              : etaIsKerahat
+                                ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock ?? ""} kerahate ${eta} dakika`
+                                : eta !== null
+                                  ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock ?? ""} ${eta} dakika kaldı`
+                                  : clock
+                                    ? `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]} ${clock}`
+                                    : `${DAY_LABELS[index]} ${PRAYER_LABELS[prayer]}`
                           }
                           aria-pressed={done}
                           disabled={!ready || future || blocked}
